@@ -6,53 +6,95 @@
     import { Button } from '$lib/components/ui/button';
     import { Input } from '$lib/components/ui/input';
     import { Label } from '$lib/components/ui/label';
+    import { Textarea } from '$lib/components/ui/textarea';
+    import { Switch } from '$lib/components/ui/switch';
     import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
-    import {
-        Table,
-        TableBody,
-        TableCell,
-        TableHead,
-        TableHeader,
-        TableRow
-    } from '$lib/components/ui/table';
+    import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '$lib/components/ui/table';
+    import { ImagePlus, X, Upload, Loader2 } from 'lucide-svelte';
 
     let { data }: { data: PageData } = $props();
 
     let editingRoom = $state<number | null>(null);
     let formData = $state({
+        name: '',
         capacity: '',
         number: '',
+        description: '',
+        imageUrl: '',
         status: true
     });
+    let imagePreview = $state<string | null>(null);
+    let uploading = $state(false);
 
     let activeView = $derived.by(() => {
         const view = $page.url.searchParams.get('view');
         return view === 'create' ? 'create' : 'list';
     }) as 'list' | 'create';
 
-    $effect(() => {
-        console.log('[PAGE] Dados recebidos:', data);
-        console.log('[PAGE] Total de salas:', data.rooms?.length || 0);
-    });
-
     function startEdit(room: any) {
         editingRoom = room.id;
         formData = {
+            name: room.name || '',
             capacity: room.capacity?.toString() || '',
             number: room.number?.toString() || '',
+            description: room.description || '',
+            imageUrl: room.imageUrl || '',
             status: room.status ?? true
         };
+        imagePreview = room.imageUrl || null;
         goto('/rooms?view=create');
     }
 
     function cancelEdit() {
         editingRoom = null;
         formData = {
+            name: '',
             capacity: '',
             number: '',
+            description: '',
+            imageUrl: '',
             status: true
         };
+        imagePreview = null;
         goto('/rooms?view=list');
+    }
+
+    async function handleImageUpload(e: Event) {
+        const input = e.target as HTMLInputElement;
+        const file = input.files?.[0];
+        
+        if (!file) return;
+
+        uploading = true;
+
+        try {
+            const uploadFormData = new FormData();
+            uploadFormData.append('file', file);
+
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: uploadFormData
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                formData.imageUrl = result.url;
+                imagePreview = result.url;
+            } else {
+                alert(result.error || 'Erro ao fazer upload');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao fazer upload da imagem');
+        } finally {
+            uploading = false;
+        }
+    }
+
+    function removeImage() {
+        formData.imageUrl = '';
+        imagePreview = null;
     }
 </script>
 
@@ -70,8 +112,10 @@
                         <TableHeader>
                             <TableRow>
                                 <TableHead>ID</TableHead>
+                                <TableHead>Nome</TableHead>
                                 <TableHead>Número</TableHead>
                                 <TableHead>Capacidade</TableHead>
+                                <TableHead>Imagem</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Criado em</TableHead>
                                 <TableHead class="text-right">Ações</TableHead>
@@ -82,30 +126,29 @@
                                 {#each data.rooms as room (room.id)}
                                     <TableRow>
                                         <TableCell class="font-medium">{room.id}</TableCell>
+                                        <TableCell>{room.name}</TableCell>
                                         <TableCell>{room.number}</TableCell>
-                                        <TableCell>{room.capacity}</TableCell>
+                                        <TableCell>{room.capacity || '-'}</TableCell>
                                         <TableCell>
-                                            <span
-                                                class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold {room.status
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-red-100 text-red-800'}"
-                                            >
+                                            {#if room.imageUrl}
+                                                <div class="w-10 h-10 rounded overflow-hidden">
+                                                    <img src={room.imageUrl} alt={room.name} class="w-full h-full object-cover" />
+                                                </div>
+                                            {:else}
+                                                <span class="text-gray-400 text-xs">Sem imagem</span>
+                                            {/if}
+                                        </TableCell>
+                                        <TableCell>
+                                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold {room.status ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
                                                 {room.status ? 'Ativa' : 'Inativa'}
                                             </span>
                                         </TableCell>
                                         <TableCell>
-                                            {room.createdAt
-                                                ? new Date(room.createdAt).toLocaleDateString('pt-BR')
-                                                : '-'}
+                                            {room.createdAt ? new Date(room.createdAt).toLocaleDateString('pt-BR') : '-'}
                                         </TableCell>
                                         <TableCell class="text-right">
                                             <div class="flex justify-end gap-2">
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onclick={() => startEdit(room)}
-                                                >
+                                                <Button type="button" variant="outline" size="sm" onclick={() => startEdit(room)}>
                                                     Editar
                                                 </Button>
                                                 <form
@@ -134,7 +177,7 @@
                                 {/each}
                             {:else}
                                 <TableRow>
-                                    <TableCell colspan={6} class="h-24 text-center">
+                                    <TableCell colspan={8} class="h-24 text-center">
                                         Nenhuma sala encontrada. Crie sua primeira sala!
                                     </TableCell>
                                 </TableRow>
@@ -161,53 +204,90 @@
                             cancelEdit();
                         };
                     }}
-                    class="grid grid-cols-1 md:grid-cols-2 gap-4"
+                    class="space-y-6"
                 >
                     {#if editingRoom}
                         <input type="hidden" name="id" value={editingRoom} />
                     {/if}
 
-                    <div class="space-y-2">
-                        <Label for="number">Número da Sala</Label>
-                        <Input
-                            type="number"
-                            id="number"
-                            name="number"
-                            bind:value={formData.number}
-                            required
-                            placeholder="Ex: 101"
-                        />
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <Label for="name">Nome da Sala</Label>
+                            <Input type="text" id="name" name="name" bind:value={formData.name} required placeholder="Ex: Sala Principal" />
+                        </div>
+
+                        <div class="space-y-2">
+                            <Label for="number">Número da Sala</Label>
+                            <Input type="number" id="number" name="number" bind:value={formData.number} required placeholder="Ex: 101" />
+                        </div>
+
+                        <div class="space-y-2">
+                            <Label for="capacity">Capacidade</Label>
+                            <Input type="number" id="capacity" name="capacity" bind:value={formData.capacity} placeholder="Ex: 30" />
+                        </div>
+
+                        <div class="space-y-2">
+                            <Label for="status" class="flex items-center justify-between">
+                                <span>Status da Sala</span>
+                                <Switch id="status" name="status" bind:checked={formData.status} />
+                            </Label>
+                            <p class="text-sm text-muted-foreground">
+                                {formData.status ? 'Sala ativa e disponível' : 'Sala desativada'}
+                            </p>
+                        </div>
                     </div>
 
                     <div class="space-y-2">
-                        <Label for="capacity">Capacidade</Label>
-                        <Input
-                            type="number"
-                            id="capacity"
-                            name="capacity"
-                            bind:value={formData.capacity}
-                            required
-                            placeholder="Ex: 30"
-                        />
+                        <Label for="description">Descrição</Label>
+                        <Textarea id="description" name="description" bind:value={formData.description} placeholder="Descreva a sala, seus recursos, etc..." rows={4} />
                     </div>
 
-                    <div class="flex items-center space-x-2 pt-8">
-                        <input
-                            type="checkbox"
-                            id="status"
-                            name="status"
-                            bind:checked={formData.status}
-                            class="w-4 h-4 rounded border-gray-300"
-                        />
-                        <Label for="status" class="!mt-0 cursor-pointer">Ativa</Label>
+                    <div class="space-y-4">
+                        <Label>Imagem da Sala</Label>
+                        
+                        <div class="space-y-2">
+                            <label for="imageFile" class="cursor-pointer block">
+                                <div class="border-2 border-dashed rounded-lg p-6 hover:border-primary transition-colors {uploading ? 'opacity-50 cursor-not-allowed' : ''}">
+                                    <div class="flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+                                        {#if uploading}
+                                            <Loader2 class="h-8 w-8 animate-spin" />
+                                            <span>Fazendo upload...</span>
+                                        {:else}
+                                            <Upload class="h-8 w-8" />
+                                            <span class="font-medium">Clique para escolher uma imagem</span>
+                                            <span class="text-xs">JPG, PNG, GIF ou WebP (máx 5MB)</span>
+                                        {/if}
+                                    </div>
+                                </div>
+                            </label>
+                            <input type="file" id="imageFile" accept="image/*" onchange={handleImageUpload} class="hidden" disabled={uploading} />
+                            <input type="hidden" name="imageUrl" bind:value={formData.imageUrl} />
+                        </div>
+
+                        {#if imagePreview}
+                            <div class="relative w-full h-64 rounded-lg overflow-hidden border border-gray-200">
+                                <img src={imagePreview} alt="Preview" class="w-full h-full object-cover" />
+                                <Button type="button" variant="destructive" size="sm" class="absolute top-2 right-2" onclick={removeImage} disabled={uploading}>
+                                    <X class="h-4 w-4 mr-1" />
+                                    Remover
+                                </Button>
+                            </div>
+                        {:else}
+                            <div class="w-full h-48 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
+                                <div class="text-center">
+                                    <ImagePlus class="h-12 w-12 mx-auto text-gray-400" />
+                                    <p class="mt-2 text-sm text-gray-500">Nenhuma imagem selecionada</p>
+                                </div>
+                            </div>
+                        {/if}
                     </div>
 
-                    <div class="md:col-span-2 flex gap-2">
-                        <Button type="submit">
+                    <div class="flex gap-2 pt-4">
+                        <Button type="submit" disabled={uploading}>
                             {editingRoom ? 'Atualizar Sala' : 'Criar Sala'}
                         </Button>
                         {#if editingRoom}
-                            <Button type="button" variant="outline" onclick={cancelEdit}>
+                            <Button type="button" variant="outline" onclick={cancelEdit} disabled={uploading}>
                                 Cancelar
                             </Button>
                         {/if}

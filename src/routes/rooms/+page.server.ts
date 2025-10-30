@@ -1,17 +1,30 @@
 import type { PageServerLoad, Actions } from './$types';
 import { db } from '$lib/server/db';
 import { rooms } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
+import { logger } from '$lib/utils/logger';
+import { z } from 'zod';
+
+const roomSchema = z.object({
+    name: z.string().min(1, 'Nome é obrigatório').max(255),
+    number: z.number().int().positive('Número deve ser positivo'),
+    capacity: z.number().int().positive('Capacidade deve ser positiva').nullable(),
+    description: z.string().max(1000).nullable(),
+    imageUrl: z.string().nullable(),
+    status: z.boolean()
+});
 
 export const load: PageServerLoad = async () => {
-    console.log('[LOAD] Buscando salas no banco...');
     try {
-        const allRooms = await db.select().from(rooms).orderBy(rooms.id);
-        console.log('[LOAD] Salas encontradas:', allRooms.length);
+        const allRooms = await db
+            .select()
+            .from(rooms)
+            .orderBy(desc(rooms.status), rooms.createdAt);
+        
         return { rooms: allRooms };
     } catch (error) {
-        console.error('[LOAD] Erro ao carregar:', error);
+        logger.error('Erro ao carregar salas:', error);
         return { rooms: [] };
     }
 };
@@ -20,30 +33,29 @@ export const actions: Actions = {
     create: async ({ request }) => {
         try {
             const formData = await request.formData();
-            const number = formData.get('number');
-            const capacity = formData.get('capacity');
-            const status = formData.get('status');
             
-            console.log('[CREATE] Dados recebidos:', { number, capacity, status });
-            
-            if (!number) {
-                console.log('[CREATE] Erro: número vazio');
-                return fail(400, { error: 'Número da sala é obrigatório' });
-            }
-            
-            const newRoom = {
-                number: parseInt(number as string),
-                capacity: capacity ? parseInt(capacity as string) : null,
-                status: status === 'on'
+            const data = {
+                name: formData.get('name') as string,
+                number: parseInt(formData.get('number') as string),
+                capacity: formData.get('capacity') ? parseInt(formData.get('capacity') as string) : null,
+                description: (formData.get('description') as string) || null,
+                imageUrl: (formData.get('imageUrl') as string) || null,
+                status: formData.get('status') === 'on'
             };
             
-            console.log('[CREATE] Inserindo:', newRoom);
-            const [inserted] = await db.insert(rooms).values(newRoom).returning();
-            console.log('[CREATE] Sala criada:', inserted);
+            const validated = roomSchema.safeParse(data);
             
+            if (!validated.success) {
+                return fail(400, { 
+                    error: validated.error.issues[0].message,
+                    fields: data
+                });
+            }
+            
+            await db.insert(rooms).values(validated.data);
             return { success: true };
         } catch (error) {
-            console.error('[CREATE] Erro:', error);
+            logger.error('Erro ao criar sala:', error);
             return fail(500, { error: 'Erro ao criar sala' });
         }
     },
@@ -51,30 +63,33 @@ export const actions: Actions = {
     update: async ({ request }) => {
         try {
             const formData = await request.formData();
-            const id = formData.get('id');
-            const number = formData.get('number');
-            const capacity = formData.get('capacity');
-            const status = formData.get('status');
+            const id = parseInt(formData.get('id') as string);
             
-            if (!id || !number) {
-                return fail(400, { error: 'ID e número são obrigatórios' });
+            const data = {
+                name: formData.get('name') as string,
+                number: parseInt(formData.get('number') as string),
+                capacity: formData.get('capacity') ? parseInt(formData.get('capacity') as string) : null,
+                description: (formData.get('description') as string) || null,
+                imageUrl: (formData.get('imageUrl') as string) || null,
+                status: formData.get('status') === 'on'
+            };
+            
+            const validated = roomSchema.safeParse(data);
+            
+            if (!validated.success) {
+                return fail(400, { 
+                    error: validated.error.issues[0].message,
+                    fields: data
+                });
             }
             
-            console.log('[UPDATE] ID:', id);
+            await db.update(rooms)
+                .set(validated.data)
+                .where(eq(rooms.id, id));
             
-            const [updated] = await db.update(rooms)
-                .set({
-                    number: parseInt(number as string),
-                    capacity: capacity ? parseInt(capacity as string) : null,
-                    status: status === 'on'
-                })
-                .where(eq(rooms.id, parseInt(id as string)))
-                .returning();
-            
-            console.log('[UPDATE] Sala atualizada:', updated);
             return { success: true };
         } catch (error) {
-            console.error('[UPDATE] Erro:', error);
+            logger.error('Erro ao atualizar sala:', error);
             return fail(500, { error: 'Erro ao atualizar sala' });
         }
     },
@@ -82,20 +97,12 @@ export const actions: Actions = {
     delete: async ({ request }) => {
         try {
             const formData = await request.formData();
-            const id = formData.get('id');
+            const id = parseInt(formData.get('id') as string);
             
-            if (!id) {
-                return fail(400, { error: 'ID é obrigatório' });
-            }
-            
-            console.log('[DELETE] ID:', id);
-            
-            await db.delete(rooms).where(eq(rooms.id, parseInt(id as string)));
-            
-            console.log('[DELETE] Sala deletada');
+            await db.delete(rooms).where(eq(rooms.id, id));
             return { success: true };
         } catch (error) {
-            console.error('[DELETE] Erro:', error);
+            logger.error('Erro ao deletar sala:', error);
             return fail(500, { error: 'Erro ao deletar sala' });
         }
     }
