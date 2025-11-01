@@ -1,15 +1,17 @@
 import { auth } from "$lib/auth";
-import { json } from "@sveltejs/kit";
 
 export async function POST({ request }) {
-	const { error } = await auth.signOut({
-		headers: request.headers,
-	}
-);
+	try {
+		const result = await auth.api.signOut({
+			headers: request.headers,
+			asResponse: true
+		});
 
-	if (error) {
-		return json({ error }, { status: 400 });
+		return result;
+	} catch (error) {
+		return new Response(JSON.stringify({ error: (error as Error).message || "Sign out failed" }), {
+			status: 400,
+			headers: { 'Content-Type': 'application/json' }
+		});
 	}
-
-	return json({ success: true });
 }
