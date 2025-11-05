@@ -25,39 +25,59 @@
     });
     let imagePreview = $state<string | null>(null);
     let uploading = $state(false);
+    let localPreview = $state<string | null>(null);
 
-    let activeView = $derived.by(() => {
-        const view = $page.url.searchParams.get('view');
-        return view === 'create' ? 'create' : 'list';
-    }) as 'list' | 'create';
-
-    function startEdit(room: any) {
-        editingRoom = room.id;
-        formData = {
-            name: room.name || '',
-            capacity: room.capacity?.toString() || '',
-            number: room.number?.toString() || '',
-            description: room.description || '',
-            imageUrl: room.imageUrl || '',
-            status: room.status ?? true
-        };
-        imagePreview = room.imageUrl || null;
-        goto('/rooms?view=create');
-    }
-
-    function cancelEdit() {
-        editingRoom = null;
-        formData = {
-            name: '',
-            capacity: '',
-            number: '',
-            description: '',
-            imageUrl: '',
-            status: true
-        };
-        imagePreview = null;
-        goto('/rooms?view=list');
-    }
+	let activeView = $derived.by(() => {
+		const view = $page.url.searchParams.get('view');
+		const id = $page.url.searchParams.get('id');
+		
+		if (view === 'edit' && id) {
+			const roomId = parseInt(id);
+			const room = data.rooms?.find(r => r.id === roomId);
+			if (room && editingRoom !== roomId) {
+				editingRoom = roomId;
+				formData = {
+					name: room.name || '',
+					capacity: room.capacity?.toString() || '',
+					number: room.number?.toString() || '',
+					description: room.description || '',
+					imageUrl: room.imageUrl || '',
+					status: room.status ?? true
+				};
+				imagePreview = room.imageUrl || null;
+				localPreview = null;
+			}
+			return 'create';
+		}
+		
+		return view === 'create' ? 'create' : 'list';
+	}) as 'list' | 'create';	function startEdit(room: any) {
+		editingRoom = room.id;
+		formData = {
+			name: room.name || '',
+			capacity: room.capacity?.toString() || '',
+			number: room.number?.toString() || '',
+			description: room.description || '',
+			imageUrl: room.imageUrl || '',
+			status: room.status ?? true
+		};
+		imagePreview = room.imageUrl || null;
+		localPreview = null;
+		goto(`/rooms?view=edit&id=${room.id}`);
+	}    function cancelEdit() {
+		editingRoom = null;
+		formData = {
+			name: '',
+			capacity: '',
+			number: '',
+			description: '',
+			imageUrl: '',
+			status: true
+		};
+		imagePreview = null;
+		localPreview = null;
+		goto('/rooms?view=list');
+	}
 
     async function handleImageUpload(e: Event) {
         const input = e.target as HTMLInputElement;
@@ -95,6 +115,12 @@
     function removeImage() {
         formData.imageUrl = '';
         imagePreview = null;
+    }
+
+    function onPickFile(e: Event) {
+        const input = e.target as HTMLInputElement;
+        const file = input.files?.[0];
+        localPreview = file ? URL.createObjectURL(file) : null;
     }
 </script>
 
@@ -197,17 +223,23 @@
             <CardContent>
                 <form
                     method="POST"
+                    enctype="multipart/form-data"
                     action="?/{editingRoom ? 'update' : 'create'}"
                     use:enhance={() => {
                         return async ({ update }) => {
                             await update();
-                            cancelEdit();
+                            if (editingRoom) {
+                                goto('/rooms?view=list');
+                            } else {
+                                goto('/');
+                            }
                         };
                     }}
                     class="space-y-6"
                 >
                     {#if editingRoom}
                         <input type="hidden" name="id" value={editingRoom} />
+                        <input type="hidden" name="currentImageUrl" value={formData.imageUrl} />
                     {/if}
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -244,32 +276,29 @@
 
                     <div class="space-y-4">
                         <Label>Imagem da Sala</Label>
-                        
-                        <div class="space-y-2">
-                            <label for="imageFile" class="cursor-pointer block">
-                                <div class="border-2 border-dashed rounded-lg p-6 hover:border-primary transition-colors {uploading ? 'opacity-50 cursor-not-allowed' : ''}">
-                                    <div class="flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
-                                        {#if uploading}
-                                            <Loader2 class="h-8 w-8 animate-spin" />
-                                            <span>Fazendo upload...</span>
-                                        {:else}
-                                            <Upload class="h-8 w-8" />
-                                            <span class="font-medium">Clique para escolher uma imagem</span>
-                                            <span class="text-xs">JPG, PNG, GIF ou WebP (máx 5MB)</span>
-                                        {/if}
-                                    </div>
+                        <label for="imageFile" class="cursor-pointer block">
+                            <div class="border-2 border-dashed rounded-lg p-6 hover:border-primary transition-colors">
+                                <div class="flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+                                    <Upload class="h-8 w-8" />
+                                    <span class="font-medium">Clique para escolher uma imagem</span>
+                                    <span class="text-xs">JPG, PNG, GIF ou WebP (máx 5MB)</span>
                                 </div>
-                            </label>
-                            <input type="file" id="imageFile" accept="image/*" onchange={handleImageUpload} class="hidden" disabled={uploading} />
-                            <input type="hidden" name="imageUrl" bind:value={formData.imageUrl} />
-                        </div>
+                            </div>
+                        </label>
+                        <input
+                            type="file"
+                            id="imageFile"
+                            name="imageFile"
+                            accept="image/*"
+                            onchange={onPickFile}
+                            class="hidden"
+                        />
 
-                        {#if imagePreview}
+                        {#if localPreview || imagePreview}
                             <div class="relative w-full h-64 rounded-lg overflow-hidden border border-gray-200">
-                                <img src={imagePreview} alt="Preview" class="w-full h-full object-cover" />
-                                <Button type="button" variant="destructive" size="sm" class="absolute top-2 right-2" onclick={removeImage} disabled={uploading}>
-                                    <X class="h-4 w-4 mr-1" />
-                                    Remover
+                                <img src={localPreview || imagePreview} alt="Preview" class="w-full h-full object-cover" />
+                                <Button type="button" variant="destructive" size="sm" class="absolute top-2 right-2" onclick={() => { localPreview = null; imagePreview = null; }}>
+                                    <X class="h-4 w-4 mr-1" /> Remover
                                 </Button>
                             </div>
                         {:else}
@@ -283,13 +312,9 @@
                     </div>
 
                     <div class="flex gap-2 pt-4">
-                        <Button type="submit" disabled={uploading}>
-                            {editingRoom ? 'Atualizar Sala' : 'Criar Sala'}
-                        </Button>
+                        <Button type="submit">{editingRoom ? 'Atualizar Sala' : 'Criar Sala'}</Button>
                         {#if editingRoom}
-                            <Button type="button" variant="outline" onclick={cancelEdit} disabled={uploading}>
-                                Cancelar
-                            </Button>
+                            <Button type="button" variant="outline" onclick={cancelEdit}>Cancelar</Button>
                         {/if}
                     </div>
                 </form>
