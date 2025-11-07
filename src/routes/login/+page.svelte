@@ -3,8 +3,8 @@
 	import { authClient } from '$lib/auth.client';
 	import { onMount } from 'svelte';
 
-	let user: any = null;
-	let loading = true;
+	let user: any = $state(null);
+	let loading = $state(true);
 
 	onMount(async () => {
 		const session = await authClient.getSession();

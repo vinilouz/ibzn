@@ -11,13 +11,13 @@
 	</div>
 
 	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-		<Card class="hover:shadow-lg transition-shadow cursor-pointer" onclick={() => goto('/painel/salas')}>
+		<Card class="hover:shadow-lg transition-shadow cursor-pointer" onclick={() => goto('/salas')}>
 			<CardHeader>
 				<CardTitle>Salas</CardTitle>
 				<CardDescription>Gerencie as salas do sistema</CardDescription>
 			</CardHeader>
 			<CardContent>
-				<Button class="w-full" onclick={() => goto('/painel/salas')}>
+				<Button class="w-full" onclick={() => goto('/salas')}>
 					Acessar
 				</Button>
 			</CardContent>

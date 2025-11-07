@@ -1,16 +1,14 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
-	import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
 	import { authClient } from '$lib/auth.client';
-	import { House } from 'lucide-svelte';
 
-	let email = '';
-	let password = '';
-	let loading = false;
-	let error = '';
+	let email = $state('');
+	let password = $state('');
+	let loading = $state(false);
+	let error = $state('');
 
 	const handleEmailLogin = async () => {
 		if (!email || !password) {

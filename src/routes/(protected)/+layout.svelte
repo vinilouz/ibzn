@@ -4,10 +4,11 @@
 	import { onMount } from 'svelte';
 	import { SidebarProvider, SidebarInset, SidebarTrigger } from '$lib/components/ui/sidebar';
 	import Sidebar from '$lib/components/Sidebar.svelte';
-		import { Separator } from '$lib/components/ui/separator';
+	import { Separator } from '$lib/components/ui/separator';
 
-	let user: any = null;
-	let loading = true;
+	let { children } = $props();
+	let user: any = $state(null);
+	let loading = $state(true);
 
 	onMount(async () => {
 		const session = await authClient.getSession();
@@ -20,8 +21,7 @@
 		}
 	});
 
-	
-	$: sidebarItems = [
+	const sidebarItems = $derived([
 		{
 			title: "Dashboard",
 			url: "/painel",
@@ -29,10 +29,10 @@
 		},
 		{
 			title: "Salas",
-			url: "/painel/salas",
+			url: "/salas",
 			iconKey: "salas"
 		}
-	];
+	]);
 </script>
 
 {#if loading}
@@ -53,7 +53,7 @@
 				</div>
 			</header>
 			<main class="flex flex-1 flex-col gap-4 p-4 pt-0">
-				<slot />
+				{@render children?.()}
 			</main>
 		</SidebarInset>
 	</SidebarProvider>

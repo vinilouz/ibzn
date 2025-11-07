@@ -5,12 +5,12 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import { authClient } from '$lib/auth.client';
 
-	let name = '';
-	let email = '';
-	let password = '';
-	let confirmPassword = '';
-	let loading = false;
-	let error = '';
+	let name = $state('');
+	let email = $state('');
+	let password = $state('');
+	let confirmPassword = $state('');
+	let loading = $state(false);
+	let error = $state('');
 
 	const handleSignup = async () => {
 		if (!name || !email || !password || !confirmPassword) {
