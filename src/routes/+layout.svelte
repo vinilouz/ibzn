@@ -1,31 +1,16 @@
 <script lang="ts">
-	import '../app.css';
-
 	let { children } = $props();
-
-	import { page } from '$app/stores';
-	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
-
-	onMount(() => {
-		// Se o usuário estiver logado e tentar acessar a página de login, redirecione para home
-		if ($page.data.user && $page.url.pathname === '/login') {
-			goto('/');
-		}
-	});
-
-	import type { LayoutServerData } from './$types';
-	import LogoutButton from '$lib/components/logout-button.svelte';
-
-	export const load: LayoutServerData = async (event) => {
-		return {
-			user: event.locals.user || null,
-			session: event.locals.session || null
-		};
-	};
+	import "../app.css"
+	import { ModeWatcher } from "mode-watcher";
+	import SunIcon from 'lucide-svelte/icons/sun'
+	import MoonIcon from 'lucide-svelte/icons/moon';
+	import { toggleMode } from 'mode-watcher';
+	import { Button } from '$lib/components/ui/button/index.js';
 </script>
 
-<div class="flex justify-end p-4">
-	<LogoutButton />
+<ModeWatcher />
+
+<div class="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
+    
+	{@render children()}
 </div>
-{@render children()}

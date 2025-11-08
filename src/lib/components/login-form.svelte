@@ -1,102 +1,92 @@
-<!-- src/lib/components/login-form.svelte -->
 <script lang="ts">
-	import type { HTMLAttributes } from "svelte/elements";
-	import {
-		FieldGroup,
-		Field,
-		FieldLabel,
-		FieldDescription,
-	} from "$lib/components/ui/field/index.js";
-	import { Input } from "$lib/components/ui/input/index.js";
-	import { Button } from "$lib/components/ui/button/index.js";
-	import { cn, type WithElementRef } from "$lib/utils.js";
-	import { goto } from "$app/navigation";
+  import { Button } from "$lib/components/ui/button/index.js";
+  import * as Card from "$lib/components/ui/card/index.js";
+  import { Input } from "$lib/components/ui/input/index.js";
+  import { FieldGroup, Field, FieldLabel, FieldDescription } from "$lib/components/ui/field/index.js";
+  import { authClient } from "$lib/auth-client";
+  import { goto } from "$app/navigation";
 
-	let {
-		ref = $bindable(null),
-		class: className,
-		...restProps
-	}: WithElementRef<HTMLAttributes<HTMLDivElement>> = $props();
+  let email = $state("");
+  let password = $state("");
+  let error = $state("");
+  let loading = $state(false);
 
-	const id = $props.id();
+  const handleSignIn = async (e: Event) => {
+    e.preventDefault();
+    loading = true;
+    error = "";
 
-	// Estados do formulário
-	let username = $state('');
-	let password = $state('');
-	let isLoading = $state(false);
-	let error = $state('');
+    try {
+      const result = await authClient.signIn.email({
+        email,
+        password,
+      });
 
-	async function handleSubmit(event: Event) {
-		event.preventDefault();
-		isLoading = true;
-		error = '';
+      if (result.error) {
+        error = result.error.message || "Dados inválidos";
+      } else {
 
-		try {
-			const response = await fetch('/api/auth/login', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({ username, password }),
-			});
-
-			const data = await response.json();
-
-			if (!response.ok) {
-				throw new Error(data.error?.message || 'Erro ao fazer login');
-			}
-
-			// Redireciona para a página inicial após o login bem-sucedido
-			await goto('/');
-		} catch (err) {
-			error = err instanceof Error ? err.message : 'Erro desconhecido';
-		} finally {
-			isLoading = false;
-		}
-	}
+        await goto("/dashboard");
+      }
+    } catch (err: any) {
+      error = err.message || "Algo deu errado";
+    } finally {
+      loading = false;
+    }
+  };
 </script>
 
-<div class={cn("flex flex-col gap-6", className)} bind:this={ref} {...restProps}>
-	<form onsubmit={handleSubmit}>
-		<FieldGroup>
-			<div class="flex flex-col items-center gap-2 text-center">
-				<h1 class="text-xl font-bold">Tela de Login</h1>
-			</div>
+<Card.Root class="mx-auto w-full max-w-sm">
+  <Card.Header>
+    <Card.Title class="text-2xl">Login</Card.Title>
+    <Card.Description>Digite seu email e sua senha para logar</Card.Description>
+  </Card.Header>
+  <Card.Content>
+    <form onsubmit={handleSignIn}>
+      <FieldGroup>
+        {#if error}
+          <div class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            {error}
+          </div>
+        {/if}
 
-			<Field>
-				<FieldLabel for="username-{id}">Nome de usuário</FieldLabel>
-				<Input 
-					id="username-{id}" 
-					type="text" 
-					placeholder="Digite seu nome de usuário" 
-					required 
-					bind:value={username}
-					disabled={isLoading}
-				/>
-			</Field>
-			<Field>
-				<FieldLabel for="password-{id}">Senha</FieldLabel>
-				<Input 
-					id="password-{id}" 
-					type="password" 
-					placeholder="Digite sua senha" 
-					required 
-					bind:value={password}
-					disabled={isLoading}
-				/>
-			</Field>
-			<Field>
-				<Button type="submit" disabled={isLoading}>
-					{#if isLoading}
-						Entrando...
-					{:else}
-						Login
-					{/if}
-				</Button>
-			</Field>
-		</FieldGroup>
-	</form>
-	<FieldDescription class="px-6 text-center">
-		IBZN
-	</FieldDescription>
-</div>
+        <Field>
+          <FieldLabel for="email">Email</FieldLabel>
+          <Input 
+            id="email" 
+            type="email" 
+            placeholder="m@example.com" 
+            required 
+            bind:value={email}
+            disabled={loading}
+          />
+        </Field>
+
+        <Field>
+          <div class="flex items-center">
+            <FieldLabel for="password">Password</FieldLabel>
+          </div>
+          <Input 
+            id="password" 
+            type="password" 
+            required 
+            bind:value={password}
+            disabled={loading}
+          />
+        </Field>
+
+        <Field>
+          <Button type="submit" class="w-full" disabled={loading}>
+            {loading ? "Logging in..." : "Login"}
+          </Button>
+
+          
+
+          <FieldDescription class="text-center">
+            IBZN - Instituto Brasa Zona Norte
+          </FieldDescription>
+        </Field>
+      </FieldGroup>
+    </form>
+  </Card.Content>
+</Card.Root>

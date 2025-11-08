@@ -8,9 +8,9 @@ export const isValidRole = (role: string): role is Roles => ROLES.includes(role 
 export const getRoleDisplayName = (role: Roles): string => {
 	switch (role) {
 		case 'admin': return 'Administrator';
-		case 'collaborator': return 'Collaborator';
+		case 'collaborator': return 'Colaborator';
 		case 'facilitator': return 'Facilitator';
-		case 'student': return 'Student';
+		case 'student': return 'Estudante';
 		default: return role;
 	}
 };

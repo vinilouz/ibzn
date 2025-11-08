@@ -1,8 +1,13 @@
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
-import { ROLES } from '$lib/utils/roles';
+import { pgTable, text, timestamp, boolean, pgEnum, serial } from "drizzle-orm/pg-core";
+
+//Enum das roles no Postgres:
+export const userRoleEnum = pgEnum("role", ["admin", "collaborator", "facilitator", "student"]);
+
+//Enum para types do TypeScript: 
+export type UserRole = "admin" | "collaborator" | "facilitator" | "student";
 
 export const user = pgTable("user", {
-  id: text("id").primaryKey(),
+  id: serial("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
@@ -14,14 +19,14 @@ export const user = pgTable("user", {
     .notNull(),
   username: text("username").unique(),
   displayUsername: text("display_username"),
-  role: text("role"),
+  role: userRoleEnum("role").default('collaborator').notNull(),
   banned: boolean("banned").default(false),
   banReason: text("ban_reason"),
   banExpires: timestamp("ban_expires"),
 });
 
 export const session = pgTable("session", {
-  id: text("id").primaryKey(),
+  id: serial("id").primaryKey(),
   expiresAt: timestamp("expires_at").notNull(),
   token: text("token").notNull().unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -37,7 +42,7 @@ export const session = pgTable("session", {
 });
 
 export const account = pgTable("account", {
-  id: text("id").primaryKey(),
+  id: serial("id").primaryKey(),
   accountId: text("account_id").notNull(),
   providerId: text("provider_id").notNull(),
   userId: text("user_id")
@@ -57,7 +62,7 @@ export const account = pgTable("account", {
 });
 
 export const verification = pgTable("verification", {
-  id: text("id").primaryKey(),
+  id: serial("id").primaryKey(),
   identifier: text("identifier").notNull(),
   value: text("value").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
@@ -67,3 +72,8 @@ export const verification = pgTable("verification", {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
 });
+
+export type User = typeof user.$inferSelect;
+export type Session = typeof session.$inferSelect;
+export type Account = typeof account.$inferSelect;
+export type Verification = typeof verification.$inferSelect;
