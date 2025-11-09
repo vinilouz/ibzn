@@ -23,8 +23,8 @@
 			return;
 		}
 
-		if (password.length < 6) {
-			error = 'A senha deve ter pelo menos 6 caracteres';
+		if (password.length < 8) { //deixei 8 para melhorar a seguranca, como indicado pelo Better Auth
+			error = 'A senha deve ter pelo menos 8 caracteres';
 			return;
 		}
 
