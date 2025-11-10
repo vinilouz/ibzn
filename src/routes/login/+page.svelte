@@ -2,6 +2,7 @@
 	import LoginForm from '$lib/components/login-form.svelte';
 	import { authClient } from '$lib/auth.client';
 	import { onMount } from 'svelte';
+	
 
 	let user: any = $state(null);
 	let loading = $state(true);

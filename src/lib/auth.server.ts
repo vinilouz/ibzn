@@ -1,4 +1,3 @@
-// src/lib/server/auth.ts
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { db } from '$lib/server/db';
@@ -18,10 +17,10 @@ export const auth = betterAuth({
     sendResetPassword: async ({ user, url, token }, request) => {
       try {
         const { data, error } = await resend.emails.send({
-          from: 'Seu App <onboarding@resend.dev>', // Mude para seu domínio verificado
+          from: 'Seu App <onboarding@resend.dev>', //tem que trocar esse email dps la no resend quando tiver o dominio
           to: [user.email],
           subject: 'Redefinir sua senha',
-          html: `
+          html: /* trocar isso dps */` 
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
               <h2 style="color: #333; margin-bottom: 20px;">Redefinição de senha</h2>
               <p style="color: #666; line-height: 1.6;">Olá,</p>

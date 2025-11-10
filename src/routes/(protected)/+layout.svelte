@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { page } from '$app/stores';
 	import { authClient } from '$lib/auth.client';
 	import { onMount } from 'svelte';
 	import { SidebarProvider, SidebarInset, SidebarTrigger } from '$lib/components/ui/sidebar';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import { Separator } from '$lib/components/ui/separator';
+	import { ModeWatcher } from 'mode-watcher'; //tema claro/escuro
+	import ThemeButton from '$lib/components/theme-button.svelte'; //botão tema claro/escuro
 
 	let { children } = $props();
 	let user: any = $state(null);
@@ -35,6 +36,8 @@
 	]);
 </script>
 
+<ModeWatcher />
+
 {#if loading}
 	<div class="flex items-center justify-center min-h-screen">
 		<div class="text-center">Carregando...</div>
@@ -50,6 +53,9 @@
 					<div class="flex items-center gap-4 flex-1">
 						<h1 class="text-lg font-semibold">IBZN</h1>
 					</div>
+
+					<ThemeButton />
+
 				</div>
 			</header>
 			<main class="flex flex-1 flex-col gap-4 p-4 pt-0">
