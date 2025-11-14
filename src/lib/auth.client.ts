@@ -1,10 +1,15 @@
 import { createAuthClient } from 'better-auth/svelte';
 
-export const authClient = createAuthClient();
+// Cliente principal do Better Auth
+export const authClient = createAuthClient({
+	baseURL: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173',
+	basePath: '/auth'
+});
 
-export const signOut = async () => {
-	const data = await authClient.signOut();
-	return data;
-};
-
-export const { useSession } = createAuthClient();
+// Exportar helpers para uso nos componentes
+export const {
+	signIn,
+	signUp,
+	signOut,
+	useSession
+} = authClient;

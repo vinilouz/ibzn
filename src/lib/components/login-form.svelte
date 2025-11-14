@@ -3,7 +3,8 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
-	import { authClient } from '$lib/auth.client';
+	import { signIn } from '$lib/auth.client';
+	import { goto } from '$app/navigation';
 
 	let email = $state('');
 	let password = $state('');
@@ -20,23 +21,34 @@
 		error = '';
 
 		try {
-			await authClient.signIn.email({
+			const result = await signIn.email({
 				email,
-				password,
-				callbackURL: '/painel'
+				password
 			});
-		} catch (err) {
-			error = 'Erro ao fazer login. Verifique suas credenciais.';
-		} finally {
+
+			if (result.error) {
+				error = result.error.message || 'Email ou senha incorretos';
+				loading = false;
+				return;
+			}
+
+			// Redirecionar após sucesso
+			await goto('/painel');
+		} catch (err: any) {
+			error = err.message || 'Erro ao fazer login. Verifique suas credenciais.';
 			loading = false;
 		}
 	};
 
 	const handleGoogleLogin = async () => {
-		await authClient.signIn.social({
-			provider: 'google',
-			callbackURL: '/painel'
-		});
+		try {
+			await signIn.social({
+				provider: 'google',
+				callbackURL: '/painel'
+			});
+		} catch (err) {
+			error = 'Erro ao fazer login com Google';
+		}
 	};
 
 	</script>

@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { db } from '$lib/server/db';
+import * as schema from '$lib/server/db/schema';
 import { Resend } from 'resend';
 import { RESEND_API_KEY } from '$env/static/private';
 import 'dotenv/config';
@@ -9,8 +10,16 @@ const resend = new Resend(RESEND_API_KEY);
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
-    provider: 'pg'
+    provider: 'pg',
+    schema
   }),
+  basePath: '/auth',
+  baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:5173',
+  trustedOrigins: [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:3000'
+  ],
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
@@ -65,6 +74,5 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!
     }
   },
-  secret: process.env.BETTER_AUTH_SECRET!,
-  trustedOrigins: process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(',') ?? []
+  secret: process.env.BETTER_AUTH_SECRET!
 });

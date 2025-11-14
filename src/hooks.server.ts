@@ -1,6 +1,11 @@
 import { auth } from '$lib/auth.server';
-import { svelteKitHandler } from 'better-auth/svelte-kit';
+import type { Handle } from '@sveltejs/kit';
 
-export async function handle({ event, resolve }) {
-	return svelteKitHandler({ event, resolve, auth, building: false });
-}
+export const handle: Handle = async ({ event, resolve }) => {
+	// Interceptar rotas do Better Auth
+	if (event.url.pathname.startsWith('/auth')) {
+		return await auth.handler(event.request);
+	}
+
+	return resolve(event);
+};

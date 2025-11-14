@@ -3,7 +3,8 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
-	import { authClient } from '$lib/auth.client';
+	import { signUp, signIn } from '$lib/auth.client';
+	import { goto } from '$app/navigation';
 
 	let name = $state('');
 	let email = $state('');
@@ -23,7 +24,7 @@
 			return;
 		}
 
-		if (password.length < 8) { //deixei 8 para melhorar a seguranca, como indicado pelo Better Auth
+		if (password.length < 8) {
 			error = 'A senha deve ter pelo menos 8 caracteres';
 			return;
 		}
@@ -32,24 +33,35 @@
 		error = '';
 
 		try {
-			await authClient.signUp.email({
+			const result = await signUp.email({
 				email,
 				password,
-				name,
-				callbackURL: '/painel'
+				name
 			});
-		} catch (err) {
-			error = 'Erro ao criar conta. Verifique os dados e tente novamente.';
-		} finally {
+
+			if (result.error) {
+				error = result.error.message || 'Erro ao criar conta';
+				loading = false;
+				return;
+			}
+
+			// Redirecionar após sucesso
+			await goto('/painel');
+		} catch (err: any) {
+			error = err.message || 'Erro ao criar conta. Verifique os dados e tente novamente.';
 			loading = false;
 		}
 	};
 
 	const handleGoogleSignup = async () => {
-		await authClient.signIn.social({
-			provider: 'google',
-			callbackURL: '/painel'
-		});
+		try {
+			await signIn.social({
+				provider: 'google',
+				callbackURL: '/painel'
+			});
+		} catch (err) {
+			error = 'Erro ao fazer cadastro com Google';
+		}
 	};
 </script>
 
