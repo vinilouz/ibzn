@@ -1,6 +1,6 @@
 {
-  "id": "fbe8f7ee-2b63-4f6b-899e-00a3fe552af2",
-  "prevId": "379c99d4-57f2-4b40-b319-a1c00f24fbb9",
+  "id": "2fbd2a03-fad4-40b8-9a92-f9ab6d885b47",
+  "prevId": "fbe8f7ee-2b63-4f6b-899e-00a3fe552af2",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -37,14 +37,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
-        },
-        "role": {
-          "name": "role",
-          "type": "role",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'user'"
         },
         "created_at": {
           "name": "created_at",
@@ -318,7 +310,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "serial",
           "primaryKey": true,
           "notNull": true
         },
@@ -520,16 +512,6 @@
     }
   },
   "enums": {
-    "public.role": {
-      "name": "role",
-      "schema": "public",
-      "values": [
-        "admin",
-        "manager",
-        "user",
-        "guest"
-      ]
-    },
     "public.weekday": {
       "name": "weekday",
       "schema": "public",

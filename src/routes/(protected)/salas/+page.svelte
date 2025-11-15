@@ -17,48 +17,63 @@
 		TableHeader,
 		TableRow
 	} from '$lib/components/ui/table';
-	import { ImagePlus, X, Upload, Loader2 } from 'lucide-svelte';
+	import { X, Upload, Plus } from 'lucide-svelte';
+
+	interface RoomFormData {
+		name: string;
+		capacity: string;
+		number: string;
+		description: string;
+		imageUrl: string;
+		status: boolean;
+	}
 
 	let { data }: { data: PageData } = $props();
 
 	let editingRoom = $state<number | null>(null);
-	let formData = $state({
+	let localPreview = $state<string | null>(null);
+	
+	const initialFormData: RoomFormData = {
 		name: '',
 		capacity: '',
 		number: '',
 		description: '',
 		imageUrl: '',
 		status: true
-	});
-	let imagePreview = $state<string | null>(null);
-	let uploading = $state(false);
-	let localPreview = $state<string | null>(null);
+	};
+	
+	let formData = $state<RoomFormData>({ ...initialFormData });
 
-	let activeView = $derived.by(() => {
+	const activeView = $derived.by(() => {
 		const view = $page.url.searchParams.get('view');
 		const id = $page.url.searchParams.get('id');
 
 		if (view === 'edit' && id) {
-			const roomId = parseInt(id);
-			const room = data.rooms?.find((r) => r.id === roomId);
-			if (room && editingRoom !== roomId) {
-				editingRoom = roomId;
-				formData = {
-					name: room.name || '',
-					capacity: room.capacity?.toString() || '',
-					number: room.number?.toString() || '',
-					description: room.description || '',
-					imageUrl: room.imageUrl || '',
-					status: room.status ?? true
-				};
-				imagePreview = room.imageUrl || null;
-				localPreview = null;
-			}
-			return 'create';
+			loadRoomForEdit(parseInt(id));
+			return 'form';
 		}
 
-		return view === 'create' ? 'create' : 'list';
-	}) as 'list' | 'create';
+		return view === 'create' ? 'form' : 'list';
+	}) as 'list' | 'form';
+
+	const imagePreview = $derived(localPreview || formData.imageUrl || null);
+	const isEditing = $derived(editingRoom !== null);
+
+	function loadRoomForEdit(roomId: number) {
+		const room = data.rooms?.find((r) => r.id === roomId);
+		if (room && editingRoom !== roomId) {
+			editingRoom = roomId;
+			formData = {
+				name: room.name || '',
+				capacity: room.capacity?.toString() || '',
+				number: room.number?.toString() || '',
+				description: room.description || '',
+				imageUrl: room.imageUrl || '',
+				status: room.status ?? true
+			};
+			localPreview = null;
+		}
+	}
 
 	function startEdit(room: any) {
 		editingRoom = room.id;
@@ -70,72 +85,71 @@
 			imageUrl: room.imageUrl || '',
 			status: room.status ?? true
 		};
-		imagePreview = room.imageUrl || null;
 		localPreview = null;
 		goto(`/salas?view=edit&id=${room.id}`);
 	}
-	function cancelEdit() {
+
+	function resetForm() {
 		editingRoom = null;
-		formData = {
-			name: '',
-			capacity: '',
-			number: '',
-			description: '',
-			imageUrl: '',
-			status: true
-		};
-		imagePreview = null;
+		formData = { ...initialFormData };
 		localPreview = null;
+	}
+
+	function cancelEdit() {
+		resetForm();
 		goto('/salas?view=list');
 	}
 
-	async function handleImageUpload(e: Event) {
+	function navigateToCreate() {
+		resetForm();
+		goto('/salas?view=create');
+	}
+
+	function handleImageSelect(e: Event) {
 		const input = e.target as HTMLInputElement;
 		const file = input.files?.[0];
-
-		if (!file) return;
-
-		uploading = true;
-
-		try {
-			const uploadFormData = new FormData();
-			uploadFormData.append('file', file);
-
-			const response = await fetch('/api/upload', {
-				method: 'POST',
-				body: uploadFormData
-			});
-
-			const result = await response.json();
-
-			if (response.ok) {
-				formData.imageUrl = result.url;
-				imagePreview = result.url;
-			} else {
-				alert(result.error || 'Erro ao fazer upload');
-			}
-		} catch (error) {
-			console.error('Erro:', error);
-			alert('Erro ao fazer upload da imagem');
-		} finally {
-			uploading = false;
+		if (file) {
+			localPreview = URL.createObjectURL(file);
 		}
 	}
 
 	function removeImage() {
 		formData.imageUrl = '';
-		imagePreview = null;
+		localPreview = null;
 	}
 
-	function onPickFile(e: Event) {
-		const input = e.target as HTMLInputElement;
-		const file = input.files?.[0];
-		localPreview = file ? URL.createObjectURL(file) : null;
+	function handleFormSubmit() {
+		return async ({ update }: any) => {
+			await update();
+			resetForm();
+			goto('/salas?view=list');
+		};
+	}
+
+	function handleDelete() {
+		return (e: Event) => {
+			if (!confirm('Tem certeza que deseja excluir esta sala?')) {
+				e.preventDefault();
+			}
+		};
+	}
+
+	function formatDate(date: Date | string | null) {
+		if (!date) return '-';
+		return new Date(date).toLocaleDateString('pt-BR');
 	}
 </script>
 
 <div class="mx-auto w-full max-w-7xl p-8">
-	<h1 class="mb-8 text-3xl font-bold">Gerenciamento de Salas</h1>
+	<div class="mb-8 flex items-center justify-between">
+		<h1 class="text-3xl font-bold">Gerenciamento de Salas</h1>
+		{#if activeView === 'list'}
+			<Button onclick={navigateToCreate}>
+				<Plus class="mr-2 h-4 w-4" />
+				Nova Sala
+			</Button>
+		{/if}
+	</div>
 
 	{#if activeView === 'list'}
 		<Card>
@@ -187,9 +201,7 @@
 												{room.status ? 'Ativa' : 'Inativa'}
 											</span>
 										</TableCell>
-										<TableCell>
-											{room.createdAt ? new Date(room.createdAt).toLocaleDateString('pt-BR') : '-'}
-										</TableCell>
+										<TableCell>{formatDate(room.createdAt)}</TableCell>
 										<TableCell class="text-right">
 											<div class="flex justify-end gap-2">
 												<Button
@@ -203,17 +215,9 @@
 												<form
 													method="POST"
 													action="?/delete"
-													use:enhance={() => {
-														return async ({ update }) => {
-															await update();
-														};
-													}}
+													use:enhance
 													class="inline"
-													onsubmit={(e) => {
-														if (!confirm('Tem certeza que deseja excluir esta sala?')) {
-															e.preventDefault();
-														}
-													}}
+													onsubmit={handleDelete()}
 												>
 													<input type="hidden" name="id" value={room.id} />
 													<Button type="submit" variant="destructive" size="sm">Excluir</Button>
@@ -238,34 +242,23 @@
 		<Card>
 			<CardHeader>
 				<CardTitle>
-					{editingRoom ? 'Editar Sala' : 'Nova Sala'}
+					{isEditing ? 'Editar Sala' : 'Nova Sala'}
 				</CardTitle>
 			</CardHeader>
 			<CardContent>
 				<form
 					method="POST"
-					enctype="multipart/form-data"
-					action="?/{editingRoom ? 'update' : 'create'}"
-					use:enhance={() => {
-						return async ({ update }) => {
-							await update();
-							if (editingRoom) {
-								goto('/salas?view=list');
-							} else {
-								goto('/');
-							}
-						};
-					}}
+					action="?/{isEditing ? 'update' : 'create'}"
+					use:enhance={handleFormSubmit}
 					class="space-y-6"
 				>
-					{#if editingRoom}
+					{#if isEditing}
 						<input type="hidden" name="id" value={editingRoom} />
-						<input type="hidden" name="currentImageUrl" value={formData.imageUrl} />
 					{/if}
 
 					<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 						<div class="space-y-2">
-							<Label for="name">Nome da Sala</Label>
+							<Label for="name">Nome da Sala *</Label>
 							<Input
 								type="text"
 								id="name"
@@ -277,7 +270,7 @@
 						</div>
 
 						<div class="space-y-2">
-							<Label for="number">Número da Sala</Label>
+							<Label for="number">Número da Sala *</Label>
 							<Input
 								type="number"
 								id="number"
@@ -323,32 +316,11 @@
 
 					<div class="space-y-4">
 						<Label>Imagem da Sala</Label>
-						<label for="imageFile" class="block cursor-pointer">
-							<div
-								class="rounded-lg border-2 border-dashed p-6 transition-colors hover:border-primary"
-							>
-								<div
-									class="flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground"
-								>
-									<Upload class="h-8 w-8" />
-									<span class="font-medium">Clique para escolher uma imagem</span>
-									<span class="text-xs">JPG, PNG, GIF ou WebP (máx 5MB)</span>
-								</div>
-							</div>
-						</label>
-						<input
-							type="file"
-							id="imageFile"
-							name="imageFile"
-							accept="image/*"
-							onchange={onPickFile}
-							class="hidden"
-						/>
-
-						{#if localPreview || imagePreview}
-							<div class="relative h-64 w-full overflow-hidden rounded-lg border border-gray-200">
+						
+						{#if imagePreview}
+							<div class="relative h-64 w-full overflow-hidden rounded-lg border">
 								<img
-									src={localPreview || imagePreview}
+									src={imagePreview}
 									alt="Preview"
 									class="h-full w-full object-cover"
 								/>
@@ -357,31 +329,48 @@
 									variant="destructive"
 									size="sm"
 									class="absolute top-2 right-2"
-									onclick={() => {
-										localPreview = null;
-										imagePreview = null;
-									}}
+									onclick={removeImage}
 								>
 									<X class="mr-1 h-4 w-4" /> Remover
 								</Button>
 							</div>
 						{:else}
-							<div
-								class="flex h-48 w-full items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50"
-							>
-								<div class="text-center">
-									<ImagePlus class="mx-auto h-12 w-12 text-gray-400" />
-									<p class="mt-2 text-sm text-gray-500">Nenhuma imagem selecionada</p>
+							<label for="imageFile" class="block cursor-pointer">
+								<div
+									class="rounded-lg border-2 border-dashed p-8 transition-colors hover:border-primary"
+								>
+									<div
+										class="flex flex-col items-center justify-center gap-2 text-muted-foreground"
+									>
+										<Upload class="h-12 w-12" />
+										<span class="font-medium">Clique para escolher uma imagem</span>
+										<span class="text-xs">JPG, PNG, GIF ou WebP (máx 5MB)</span>
+									</div>
 								</div>
-							</div>
+							</label>
 						{/if}
+						
+						<input
+							type="hidden"
+							name="imageUrl"
+							value={formData.imageUrl}
+						/>
+						<input
+							type="file"
+							id="imageFile"
+							accept="image/*"
+							onchange={handleImageSelect}
+							class="hidden"
+						/>
 					</div>
 
 					<div class="flex gap-2 pt-4">
-						<Button type="submit">{editingRoom ? 'Atualizar Sala' : 'Criar Sala'}</Button>
-						{#if editingRoom}
-							<Button type="button" variant="outline" onclick={cancelEdit}>Cancelar</Button>
-						{/if}
+						<Button type="submit">
+							{isEditing ? 'Atualizar Sala' : 'Criar Sala'}
+						</Button>
+						<Button type="button" variant="outline" onclick={cancelEdit}>
+							Cancelar
+						</Button>
 					</div>
 				</form>
 			</CardContent>

@@ -20,7 +20,7 @@ export const courses = pgTable("courses", {
 	createdAt: timestamp({ mode: 'string' }).notNull(),
 	updatedAt: timestamp({ mode: 'string' }).notNull(),
 	teacher: text().notNull(),
-	room: text().notNull(),
+	room: integer().notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.teacher],
