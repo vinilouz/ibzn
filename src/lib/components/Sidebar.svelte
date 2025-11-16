@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '$lib/components/ui/sidebar';
 	import { page } from '$app/stores';
-	import { Home, Building2, Settings, LogOut, User, Menu, Plus, List, ChevronDown } from 'lucide-svelte';
+	import { Home, Building2, Settings, LogOut, User, Plus, List, ChevronDown, BookOpenText } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator';
 	import { authClient } from '$lib/auth.client';
@@ -19,6 +19,7 @@
 
 	let roomsExpanded = $state(false);
 	let collapsed = $state(false);
+	let coursesExpanded = $state(false);
 
 	const getIcon = (iconKey: string) => {
 		switch (iconKey) {
@@ -28,6 +29,8 @@
 				return Building2;
 			case 'settings':
 				return Settings;
+			case 'courses':
+				return BookOpenText;
 			default:
 				return Home;
 		}
@@ -55,6 +58,7 @@
 		<SidebarMenu class="space-y-3 flex-1">
 			{#each sidebarItems as item}
 				{@const IconComponent = getIcon(item.iconKey)}
+				
 				{#if item.title === 'Salas'}
 					<SidebarMenuItem>
 						<SidebarMenuButton
@@ -98,7 +102,53 @@
 							</div>
 						{/if}
 					</SidebarMenuItem>
+				
+				{:else if item.title === 'Cursos'}
+					<!-- Add Courses dropdown -->
+					<SidebarMenuItem>
+						<SidebarMenuButton
+							class="w-full justify-between h-12 rounded-lg transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:bg-sidebar-accent focus:text-sidebar-accent-foreground {$page.url.pathname.includes('/cursos') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm' : ''}"
+							onclick={() => {
+								if (collapsed) {
+									collapsed = false;
+								}
+								coursesExpanded = !coursesExpanded;
+							}}
+						>
+							<IconComponent class="h-5 w-5" />
+							<span class="text-sm font-medium flex-1">{item.title}</span>
+							<ChevronDown
+								class="h-4 w-4 transition-transform duration-200"
+								style="transform: rotate({coursesExpanded ? '180' : '0'}deg);"
+							/>
+						</SidebarMenuButton>
+
+						{#if coursesExpanded && !collapsed}
+							<div class="ml-8 mt-2 space-y-2" transition:slide={{ duration: 200 }}>
+								<Button
+									variant={$page.url.searchParams.get('view') === 'create' ? 'secondary' : 'ghost'}
+									class="w-full justify-start text-sm h-10 px-4"
+									onclick={() => goto('/cursos?view=create')}
+								>
+									<Plus class="mr-3 h-4 w-4" />
+									Criar Curso
+								</Button>
+								<Button
+									variant={$page.url.pathname === '/cursos' &&
+									$page.url.searchParams.get('view') !== 'create'
+										? 'secondary'
+										: 'ghost'}
+									class="w-full justify-start text-sm h-10 px-4"
+									onclick={() => goto('/cursos?view=list')}
+								>
+									<List class="mr-3 h-4 w-4" />
+									Ver Cursos
+								</Button>
+							</div>
+						{/if}
+					</SidebarMenuItem>
 				{:else}
+					<!-- Regular menu items -->
 					<SidebarMenuItem>
 						<SidebarMenuButton
 							class="w-full justify-start h-12 rounded-lg transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:bg-sidebar-accent focus:text-sidebar-accent-foreground {$page.url.pathname === item.url ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm' : ''}"

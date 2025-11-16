@@ -32,7 +32,12 @@
 			title: "Salas",
 			url: "/salas",
 			iconKey: "salas"
-		}
+		},
+		{
+			title: "Cursos",
+			url: "/cursos",
+			iconKey: "courses"
+		},
 	]);
 </script>
 
