@@ -13,6 +13,15 @@ export const auth = betterAuth({
     provider: 'pg',
     schema
   }),
+  user: {
+    additionalFields: {
+      role: {
+        type: 'string',
+        defaultValue: 'user',
+        required: true
+      }
+    }
+  },
   basePath: '/auth',
   baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:5173',
   trustedOrigins: [
