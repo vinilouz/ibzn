@@ -45,7 +45,7 @@ export async function POST(event: RequestEvent) {
 
     // Verificar se há vagas disponíveis
     if (currentEnrollments >= course.capacity) {
-        // ✅ Atualizar flag isFull
+        
         await db
             .update(courses)
             .set({ isFull: true })

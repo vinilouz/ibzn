@@ -106,7 +106,7 @@
       </SheetHeader>
 
       <div class="mt-6">
-        {#if isEditMode && selectedCustomer}
+        {#if isEditMode && selectedParticipant}
           <!-- Modo Visualização/Edição -->
           <div class="space-y-6">
             <!-- Perfil -->
@@ -115,38 +115,38 @@
                 <User class="w-8 h-8 text-primary" />
               </div>
               <div>
-                <h2 class="text-xl font-semibold">{selectedCustomer.name}</h2>
-                <p class="text-muted-foreground">{selectedCustomer.phone}</p>
+                <h2 class="text-xl font-semibold">{selectedParticipant.name}</h2>
+                <p class="text-muted-foreground">{selectedParticipant.phone}</p>
               </div>
             </div>
 
             <!-- Formulário de Edição -->
             <form method="POST" action="?/update" use:enhance on:submit={closeDrawer} class="space-y-4">
-              <input type="hidden" name="id" value={selectedCustomer.id} />
+              <input type="hidden" name="id" value={selectedParticipant.id} />
               
               <div>
                 <label for="edit-name" class="text-sm font-medium mb-2 block">Nome</label>
-                <Input id="edit-name" name="name" value={selectedCustomer.name} required />
+                <Input id="edit-name" name="name" value={selectedParticipant.name} required />
               </div>
 
               <div>
                 <label for="edit-phone" class="text-sm font-medium mb-2 block">Telefone</label>
-                <Input id="edit-phone" name="phone" value={selectedCustomer.phone} required />
+                <Input id="edit-phone" name="phone" value={selectedParticipant.phone} required />
               </div>
 
               <div>
                 <label for="edit-address" class="text-sm font-medium mb-2 block">Endereço</label>
-                <Input id="edit-address" name="address" value={selectedCustomer.address || ''} />
+                <Input id="edit-address" name="address" value={selectedParticipant.address || ''} />
               </div>
 
               <div>
                 <label for="edit-role" class="text-sm font-medium mb-2 block">Função</label>
-                <Input id="edit-role" name="role" value={selectedCustomer.role || ''} />
+                <Input id="edit-role" name="role" value={selectedParticipant.role || ''} />
               </div>
 
               <div>
                 <label for="edit-birthdate" class="text-sm font-medium mb-2 block">Data de Nascimento</label>
-                <Input id="edit-birthdate" name="birthdate" type="date" value={selectedCustomer.birthdate || ''} />
+                <Input id="edit-birthdate" name="birthdate" type="date" value={selectedParticipant.birthdate || ''} />
               </div>
 
               <div class="flex gap-2 pt-4">
@@ -159,7 +159,7 @@
 
             <!-- Botão Excluir -->
             <form method="POST" action="?/delete" use:enhance on:submit={closeDrawer}>
-              <input type="hidden" name="id" value={selectedCustomer.id} />
+              <input type="hidden" name="id" value={selectedParticipant.id} />
               <Button variant="destructive" type="submit" class="w-full">
                 <Trash2 class="w-4 h-4 mr-2" />
                 Excluir Participante

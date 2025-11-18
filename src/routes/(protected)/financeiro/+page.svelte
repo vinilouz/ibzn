@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '$lib/components/ui/card';
   import { Badge } from '$lib/components/ui/badge';
-  import { DollarSign, TrendingUp, Clock, CheckCircle, XCircle, Users, Gift, AlertCircle } from 'lucide-svelte';
+  import { DollarSign, Clock, CheckCircle, Gift, AlertCircle } from 'lucide-svelte';
 
   export let data;
 

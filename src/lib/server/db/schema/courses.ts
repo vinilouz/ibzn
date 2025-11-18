@@ -1,4 +1,4 @@
-import { pgTable, pgEnum,integer, text, doublePrecision, boolean, interval, date, timestamp, foreignKey } from "drizzle-orm/pg-core";
+import { pgTable, pgEnum, integer, text, doublePrecision, boolean, interval, date, timestamp, foreignKey } from "drizzle-orm/pg-core";
 import { user } from "./user";
 import { rooms } from "./rooms";
 
