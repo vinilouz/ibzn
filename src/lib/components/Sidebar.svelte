@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '$lib/components/ui/sidebar';
 	import { page } from '$app/stores';
-	import { Home, Building2, Settings, LogOut, User, Menu, Plus, List, ChevronDown } from 'lucide-svelte';
+	import { Home, Building2, Settings, LogOut, User, Plus, List, ChevronDown, Users, UserCircle, DollarSign, TrendingUp } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Separator } from '$lib/components/ui/separator';
 	import { authClient } from '$lib/auth.client';
@@ -18,6 +18,7 @@
 	} = $props();
 
 	let roomsExpanded = $state(false);
+	let peopleExpanded = $state(false);
 	let collapsed = $state(false);
 
 	const getIcon = (iconKey: string) => {
@@ -26,6 +27,16 @@
 				return Home;
 			case 'salas':
 				return Building2;
+			case 'pessoas':
+				return Users;
+			case 'facilitadores':
+				return Users;
+			case 'clientes':
+				return UserCircle;
+			case 'pagamentos':
+				return DollarSign;
+			case 'financeiro':
+				return TrendingUp;
 			case 'settings':
 				return Settings;
 			default:
@@ -94,6 +105,46 @@
 								>
 									<List class="mr-3 h-4 w-4" />
 									Ver Salas
+								</Button>
+							</div>
+						{/if}
+					</SidebarMenuItem>
+				{:else if item.title === 'Pessoas'}
+					<SidebarMenuItem>
+						<SidebarMenuButton
+							class="w-full justify-between h-12 rounded-lg transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:bg-sidebar-accent focus:text-sidebar-accent-foreground {$page.url.pathname.includes('/facilitators') || $page.url.pathname.includes('/participants') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm' : ''}"
+							onclick={() => {
+								if (collapsed) {
+									collapsed = false;
+								}
+								peopleExpanded = !peopleExpanded;
+							}}
+						>
+							<IconComponent class="h-5 w-5" />
+							<span class="text-sm font-medium flex-1">{item.title}</span>
+							<ChevronDown
+								class="h-4 w-4 transition-transform duration-200"
+								style="transform: rotate({peopleExpanded ? '180' : '0'}deg);"
+							/>
+						</SidebarMenuButton>
+
+						{#if peopleExpanded && !collapsed}
+							<div class="ml-8 mt-2 space-y-2" transition:slide={{ duration: 200 }}>
+								<Button
+									variant={$page.url.pathname === '/facilitators' ? 'secondary' : 'ghost'}
+									class="w-full justify-start text-sm h-10 px-4"
+									onclick={() => goto('/facilitators')}
+								>
+									<Users class="mr-3 h-4 w-4" />
+									Facilitadores
+								</Button>
+								<Button
+									variant={$page.url.pathname === '/participants' ? 'secondary' : 'ghost'}
+									class="w-full justify-start text-sm h-10 px-4"
+									onclick={() => goto('/participants')}
+								>
+									<UserCircle class="mr-3 h-4 w-4" />
+									Participantes
 								</Button>
 							</div>
 						{/if}

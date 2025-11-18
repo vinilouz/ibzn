@@ -1,0 +1,65 @@
+// src/routes/participants/+page.server.ts
+import type { Actions } from './$types';
+import { db } from '$lib/server/db';
+import { participants } from '$lib/server/db/schema';
+import { eq } from 'drizzle-orm';
+
+export const load = async () => {
+  const allParticipants = await db.select().from(participants);
+
+  return {
+    participants: allParticipants
+  };
+};
+
+export const actions: Actions = {
+  create: async ({ request }) => {
+    const data = await request.formData();
+    const name = data.get('name') as string;
+    const phone = data.get('phone') as string;
+    const address = data.get('address') as string | null;
+    const role = data.get('role') as string | null;
+    const birthdate = data.get('birthdate') as string | null;
+
+    await db.insert(participants).values({
+      name,
+      phone,
+      address: address || null,
+      role: role || null,
+      birthdate: birthdate || null
+    });
+
+    return { success: true };
+  },
+
+  update: async ({ request }) => {
+    const data = await request.formData();
+    const id = Number(data.get('id'));
+    const name = data.get('name') as string;
+    const phone = data.get('phone') as string;
+    const address = data.get('address') as string | null;
+    const role = data.get('role') as string | null;
+    const birthdate = data.get('birthdate') as string | null;
+
+    await db.update(participants)
+      .set({
+        name,
+        phone,
+        address: address || null,
+        role: role || null,
+        birthdate: birthdate || null
+      })
+      .where(eq(participants.id, id));
+
+    return { success: true };
+  },
+
+  delete: async ({ request }) => {
+    const data = await request.formData();
+    const id = Number(data.get('id'));
+
+    await db.delete(participants).where(eq(participants.id, id));
+
+    return { success: true };
+  }
+};

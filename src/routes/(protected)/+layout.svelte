@@ -32,6 +32,21 @@
 			title: "Salas",
 			url: "/salas",
 			iconKey: "salas"
+		},
+		{
+			title: "Pessoas",
+			url: "#",
+			iconKey: "pessoas"
+		},
+		{
+			title: "Financeiro",
+			url: "/financeiro",
+			iconKey: "financeiro"
+		},
+		{
+			title: "Pagamentos",
+			url: "/payments",
+			iconKey: "pagamentos"
 		}
 	]);
 </script>
