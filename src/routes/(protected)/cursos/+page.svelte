@@ -1,4 +1,3 @@
-<!-- src/routes/cursos/+page.svelte -->
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
@@ -8,7 +7,6 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { Switch } from '$lib/components/ui/switch';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import {
 		Table,
@@ -25,15 +23,22 @@
 		description: string;
 		price: string;
 		capacity: string;
-		isFull: boolean;
 		duration: string;
-		hourly: string;
-		weekdays: string;
-		dates: string;
+		sessionsInfo: string;
 		startDate: string;
+		weekdays: string; 
+		startTime: string;
+		endTime: string;
+		teacher: string;
+		room: string;
 	}
 
 	let { data }: { data: PageData } = $props();
+    $effect(() => {
+		console.log('Data recebida:', data);
+		console.log('Facilitators:', data.facilitators);
+		console.log('Rooms:', data.rooms);
+	});
 
 	let editingCourse = $state<number | null>(null);
 	
@@ -42,12 +47,14 @@
 		description: '',
 		price: '',
 		capacity: '',
-		isFull: false,
 		duration: '',
-		hourly: '',
+		sessionsInfo: '',
+		startDate: '',
 		weekdays: '',
-		dates: '',
-		startDate: ''
+		startTime: '',
+		endTime: '',
+		teacher: '',
+		room: ''
 	};
 	
 	let formData = $state<CourseFormData>({ ...initialFormData });
@@ -85,12 +92,14 @@
 				description: course.description || '',
 				price: course.price?.toString() || '',
 				capacity: course.capacity?.toString() || '',
-				isFull: course.isFull ?? false,
 				duration: course.duration?.toString() || '',
-				hourly: course.hourly || '',
+				sessionsInfo: course.sessionsInfo || '',
+				startDate: course.startDate || '',
 				weekdays: course.weekdays || '',
-				dates: course.dates || '',
-				startDate: course.startDate || ''
+				startTime: course.startTime || '',
+				endTime: course.endTime || '',
+				teacher: course.teacher?.toString() || '',
+				room: course.room?.toString() || ''
 			};
 		}
 	}
@@ -102,12 +111,14 @@
 			description: course.description || '',
 			price: course.price?.toString() || '',
 			capacity: course.capacity?.toString() || '',
-			isFull: course.isFull ?? false,
 			duration: course.duration?.toString() || '',
-			hourly: course.hourly || '',
+			sessionsInfo: course.sessionsInfo || '',
+			startDate: course.startDate || '',
 			weekdays: course.weekdays || '',
-			dates: course.dates || '',
-			startDate: course.startDate || ''
+			startTime: course.startTime || '',
+			endTime: course.endTime || '',
+			teacher: course.teacher?.toString() || '',
+			room: course.room?.toString() || ''
 		};
 		goto(`/cursos?view=edit&id=${course.id}`);
 	}
@@ -143,8 +154,8 @@
 		};
 	}
 
-	function formatDate(date: Date | string | null) {
-		if (!date) return '-';
+	function formatDate(date: string | null) {
+		if (!date) return 'A definir';
 		return new Date(date).toLocaleDateString('pt-BR');
 	}
 
@@ -155,7 +166,12 @@
 
 	function getWeekdayLabel(weekday: string | null) {
 		if (!weekday) return '-';
-		return weekdayOptions.find(w => w.value === weekday)?.label || weekday;
+		return weekdayOptions.find(opt => opt.value === weekday)?.label || weekday;
+	}
+
+	function formatTimeRange(start: string | null, end: string | null) {
+		if (!start || !end) return '-';
+		return `${start.substring(0, 5)} - ${end.substring(0, 5)}`;
 	}
 </script>
 
@@ -182,13 +198,14 @@
 							<TableRow>
 								<TableHead>ID</TableHead>
 								<TableHead>Nome</TableHead>
+								<TableHead>Professor</TableHead>
+								<TableHead>Sala</TableHead>
 								<TableHead>Preço</TableHead>
-								<TableHead>Capacidade</TableHead>
-								<TableHead>Duração (min)</TableHead>
-								<TableHead>Dia da Semana</TableHead>
-								<TableHead>Horário</TableHead>
+								<TableHead>Inscrições</TableHead>
+								<TableHead>Duração</TableHead>
+								<TableHead>Dia/Horário</TableHead>
+								<TableHead>Data Início</TableHead>
 								<TableHead>Status</TableHead>
-								<TableHead>Criado em</TableHead>
 								<TableHead class="text-right">Ações</TableHead>
 							</TableRow>
 						</TableHeader>
@@ -197,12 +214,21 @@
 								{#each data.courses as course (course.id)}
 									<TableRow>
 										<TableCell class="font-medium">{course.id}</TableCell>
-										<TableCell>{course.courseName}</TableCell>
+										<TableCell class="max-w-xs truncate">{course.courseName}</TableCell>
+										<TableCell>{course.teacherName || '-'}</TableCell>
+										<TableCell>{course.roomName ? `${course.roomName} (${course.roomNumber})` : '-'}</TableCell>
 										<TableCell>{formatPrice(course.price)}</TableCell>
-										<TableCell>{course.capacity}</TableCell>
-										<TableCell>{course.duration}</TableCell>
-										<TableCell>{getWeekdayLabel(course.weekdays)}</TableCell>
-										<TableCell>{course.hourly || '-'}</TableCell>
+										<TableCell>
+											<span class="font-medium">
+												{course.enrollmentCount || 0}/{course.capacity}
+											</span>
+										</TableCell>
+										<TableCell>{course.duration}h</TableCell>
+										<TableCell class="text-xs">
+											{getWeekdayLabel(course.weekdays)}<br />
+											{formatTimeRange(course.startTime, course.endTime)}
+										</TableCell>
+										<TableCell>{formatDate(course.startDate)}</TableCell>
 										<TableCell>
 											<span
 												class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold {course.isFull
@@ -212,7 +238,6 @@
 												{course.isFull ? 'Cheio' : 'Disponível'}
 											</span>
 										</TableCell>
-										<TableCell>{formatDate(course.createdAt)}</TableCell>
 										<TableCell class="text-right">
 											<div class="flex justify-end gap-2">
 												<Button
@@ -239,7 +264,7 @@
 								{/each}
 							{:else}
 								<TableRow>
-									<TableCell colspan={10} class="h-24 text-center">
+									<TableCell colspan={11} class="h-24 text-center">
 										Nenhum curso encontrado. Crie seu primeiro curso!
 									</TableCell>
 								</TableRow>
@@ -267,122 +292,174 @@
 						<input type="hidden" name="id" value={editingCourse} />
 					{/if}
 
-					<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-						<div class="space-y-2">
-							<Label for="courseName">Nome do Curso *</Label>
-							<Input
-								type="text"
-								id="courseName"
-								name="courseName"
-								bind:value={formData.courseName}
-								required
-								placeholder="Ex: Yoga Avançado"
-							/>
-						</div>
+					
+					<div class="space-y-4">
+						<h3 class="text-lg font-semibold">Informações Básicas</h3>
+						
+						<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+							<div class="space-y-2 md:col-span-2">
+								<Label for="courseName">Nome do Curso *</Label>
+								<Input
+									type="text"
+									id="courseName"
+									name="courseName"
+									bind:value={formData.courseName}
+									required
+									placeholder="Ex: Curso Profissionalizante para Maquiador"
+								/>
+							</div>
 
-						<div class="space-y-2">
-							<Label for="price">Preço (R$) *</Label>
-							<Input
-								type="number"
-								step="0.01"
-								id="price"
-								name="price"
-								bind:value={formData.price}
-								required
-								placeholder="Ex: 150.00"
-							/>
-						</div>
+							<div class="space-y-2 md:col-span-2">
+								<Label for="description">Descrição</Label>
+								<Textarea
+									id="description"
+									name="description"
+									bind:value={formData.description}
+									placeholder="Descreva o curso, seus objetivos, público-alvo..."
+									rows={4}
+								/>
+							</div>
 
-						<div class="space-y-2">
-							<Label for="capacity">Capacidade *</Label>
-							<Input
-								type="number"
-								id="capacity"
-								name="capacity"
-								bind:value={formData.capacity}
-								required
-								placeholder="Ex: 20"
-							/>
-						</div>
+							<div class="space-y-2">
+								<Label for="price">Preço (R$) *</Label>
+								<Input
+									type="number"
+									step="0.01"
+									id="price"
+									name="price"
+									bind:value={formData.price}
+									required
+									placeholder="Ex: 1500.00"
+								/>
+							</div>
 
-						<div class="space-y-2">
-							<Label for="duration">Duração (minutos) *</Label>
-							<Input
-								type="number"
-								id="duration"
-								name="duration"
-								bind:value={formData.duration}
-								required
-								placeholder="Ex: 60"
-							/>
-						</div>
+							<div class="space-y-2">
+								<Label for="capacity">Capacidade *</Label>
+								<Input
+									type="number"
+									id="capacity"
+									name="capacity"
+									bind:value={formData.capacity}
+									required
+									placeholder="Ex: 10"
+								/>
+							</div>
 
-						<div class="space-y-2">
-							<Label for="hourly">Horário</Label>
-							<Input
-								type="time"
-								id="hourly"
-								name="hourly"
-								bind:value={formData.hourly}
-								placeholder="Ex: 14:00"
-							/>
-						</div>
+							<div class="space-y-2">
+								<Label for="duration">Duração (horas totais) *</Label>
+								<Input
+									type="number"
+									id="duration"
+									name="duration"
+									bind:value={formData.duration}
+									required
+									placeholder="Ex: 160"
+								/>
+							</div>
 
-						<div class="space-y-2">
-							<Label for="weekdays">Dia da Semana</Label>
-							<select
-								id="weekdays"
-								name="weekdays"
-								bind:value={formData.weekdays}
-								class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-							>
-								<option value="">Selecione um dia</option>
-								{#each weekdayOptions as weekday}
-									<option value={weekday.value}>{weekday.label}</option>
-								{/each}
-							</select>
-						</div>
-
-						<div class="space-y-2">
-							<Label for="startDate">Data de Início</Label>
-							<Input
-								type="date"
-								id="startDate"
-								name="startDate"
-								bind:value={formData.startDate}
-							/>
-						</div>
-
-						<div class="space-y-2">
-							<Label for="dates">Data Específica</Label>
-							<Input
-								type="date"
-								id="dates"
-								name="dates"
-								bind:value={formData.dates}
-							/>
-						</div>
-
-						<div class="space-y-2 md:col-span-2">
-							<Label for="isFull" class="flex items-center justify-between">
-								<span>Curso Lotado</span>
-								<Switch id="isFull" name="isFull" bind:checked={formData.isFull} />
-							</Label>
-							<p class="text-sm text-muted-foreground">
-								{formData.isFull ? 'Curso está cheio' : 'Vagas disponíveis'}
-							</p>
+							<div class="space-y-2">
+								<Label for="sessionsInfo">Info das Sessões</Label>
+								<Input
+									type="text"
+									id="sessionsInfo"
+									name="sessionsInfo"
+									bind:value={formData.sessionsInfo}
+									placeholder="Ex: 4 encontros de 2h30"
+								/>
+							</div>
 						</div>
 					</div>
 
-					<div class="space-y-2">
-						<Label for="description">Descrição</Label>
-						<Textarea
-							id="description"
-							name="description"
-							bind:value={formData.description}
-							placeholder="Descreva o curso, seus objetivos, etc..."
-							rows={4}
-						/>
+					
+					<div class="space-y-4">
+						<h3 class="text-lg font-semibold">Recursos</h3>
+						
+						<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+							<div class="space-y-2">
+								<Label for="teacher">Professor *</Label>
+								<select
+									id="teacher"
+									name="teacher"
+									bind:value={formData.teacher}
+									required
+									class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+								>
+									<option value="">Selecione um professor</option>
+									{#each data.facilitators as facilitator}
+										<option value={facilitator.id}>{facilitator.name}</option>
+									{/each}
+								</select>
+							</div>
+
+							<div class="space-y-2">
+								<Label for="room">Sala *</Label>
+								<select
+									id="room"
+									name="room"
+									bind:value={formData.room}
+									required
+									class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+								>
+									<option value="">Selecione uma sala</option>
+									{#each data.rooms as room}
+										<option value={room.id}>{room.name} - Sala {room.number}</option>
+									{/each}
+								</select>
+							</div>
+						</div>
+					</div>
+
+					
+					<div class="space-y-4">
+						<h3 class="text-lg font-semibold">Datas e Horários</h3>
+						
+						<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+							<div class="space-y-2">
+								<Label for="startDate">Data de Início</Label>
+								<Input
+									type="date"
+									id="startDate"
+									name="startDate"
+									bind:value={formData.startDate}
+								/>
+								<p class="text-xs text-muted-foreground">Deixe vazio para "A definir"</p>
+							</div>
+
+							<div class="space-y-2">
+								<Label for="weekdays">Dia da Semana</Label>
+								<select
+									id="weekdays"
+									name="weekdays"
+									bind:value={formData.weekdays}
+									class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+								>
+									<option value="">Selecione um dia</option>
+									{#each weekdayOptions as weekday}
+										<option value={weekday.value}>{weekday.label}</option>
+									{/each}
+								</select>
+							</div>
+
+							<div class="space-y-2">
+								<Label for="startTime">Horário Início</Label>
+								<Input
+									type="time"
+									id="startTime"
+									name="startTime"
+									bind:value={formData.startTime}
+								/>
+							</div>
+
+							<div class="space-y-2">
+								<Label for="endTime">Horário Fim</Label>
+								<Input
+									type="time"
+									id="endTime"
+									name="endTime"
+									bind:value={formData.endTime}
+								/>
+							</div>
+						</div>
 					</div>
 
 					<div class="flex gap-2 pt-4">

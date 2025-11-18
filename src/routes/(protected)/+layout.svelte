@@ -4,8 +4,8 @@
 	import { SidebarProvider, SidebarInset, SidebarTrigger } from '$lib/components/ui/sidebar';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import { Separator } from '$lib/components/ui/separator';
-	import { ModeWatcher } from 'mode-watcher'; //tema claro/escuro
-	import ThemeButton from '$lib/components/theme-button.svelte'; //botão tema claro/escuro
+	import { ModeWatcher } from 'mode-watcher'; 
+	import ThemeButton from '$lib/components/theme-button.svelte'; 
 
 	let { children } = $props();
 	let user: any = $state(null);
@@ -16,7 +16,7 @@
 		user = session.data?.user || null;
 		loading = false;
 
-		// Redirecionar se não estiver autenticado
+		
 		if (!user) {
 			window.location.href = '/login';
 		}
@@ -37,7 +37,7 @@
 			title: "Cursos",
 			url: "/cursos",
 			iconKey: "courses"
-		},
+		}
 	]);
 </script>
 
