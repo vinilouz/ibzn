@@ -1,14 +1,39 @@
 // src/routes/participants/+page.server.ts
 import type { Actions } from './$types';
 import { db } from '$lib/server/db';
-import { participants } from '$lib/server/db/schema';
+import { participants, courseEnrollments, courses } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 
 export const load = async () => {
+  // Buscar todos os participantes
   const allParticipants = await db.select().from(participants);
 
+  // Buscar todos os cursos disponíveis
+  const allCourses = await db.select().from(courses);
+
+  // Buscar matrículas com informações dos cursos
+  const enrollments = await db
+    .select({
+      enrollmentId: courseEnrollments.id,
+      participantId: courseEnrollments.participantId,
+      courseId: courseEnrollments.courseId,
+      courseName: courses.courseName,
+      enrolledAt: courseEnrollments.enrolledAt,
+      status: courseEnrollments.status,
+      amount: courseEnrollments.amount,
+    })
+    .from(courseEnrollments)
+    .leftJoin(courses, eq(courseEnrollments.courseId, courses.id));
+
+  // Organizar matrículas por participante
+  const participantsWithCourses = allParticipants.map(participant => ({
+    ...participant,
+    courses: enrollments.filter(e => e.participantId === participant.id)
+  }));
+
   return {
-    participants: allParticipants
+    participants: participantsWithCourses,
+    courses: allCourses
   };
 };
 

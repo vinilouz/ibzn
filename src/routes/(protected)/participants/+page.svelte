@@ -3,8 +3,33 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Sheet, SheetContent, SheetHeader, SheetTitle } from '$lib/components/ui/sheet';
+  import { Badge } from '$lib/components/ui/badge';
   import { enhance } from '$app/forms';
-  import { Plus, Pencil, Trash2, User } from 'lucide-svelte';
+  import { Plus, Pencil, Trash2, User, GraduationCap, Calendar } from 'lucide-svelte';
+
+  function formatDate(dateString: string) {
+    return new Date(dateString).toLocaleDateString('pt-BR');
+  }
+
+  function getStatusBadge(status: string) {
+    switch (status) {
+      case 'active': return 'bg-green-100 text-green-800';
+      case 'completed': return 'bg-blue-100 text-blue-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'dropped': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  }
+
+  function getStatusText(status: string) {
+    switch (status) {
+      case 'active': return 'Ativo';
+      case 'completed': return 'Concluído';
+      case 'cancelled': return 'Cancelado';
+      case 'dropped': return 'Desistente';
+      default: return status;
+    }
+  }
   
   export let data;
 
@@ -56,15 +81,21 @@
         <Card class="hover:shadow-lg transition-shadow cursor-pointer h-full">
           <CardHeader>
             <div class="flex items-start justify-between">
-              <div class="flex items-center gap-3">
+              <div class="flex items-center gap-3 flex-1">
                 <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                   <User class="w-6 h-6 text-primary" />
                 </div>
-                <div>
+                <div class="flex-1">
                   <h3 class="font-semibold text-lg">{participant.name}</h3>
                   <p class="text-sm text-muted-foreground">{participant.phone}</p>
                 </div>
               </div>
+              {#if participant.courses && participant.courses.length > 0}
+                <Badge variant="secondary" class="ml-2 flex items-center gap-1">
+                  <GraduationCap class="w-3 h-3" />
+                  {participant.courses.length}
+                </Badge>
+              {/if}
             </div>
           </CardHeader>
           {#if participant.role || participant.address}
@@ -118,6 +149,37 @@
                 <h2 class="text-xl font-semibold">{selectedParticipant.name}</h2>
                 <p class="text-muted-foreground">{selectedParticipant.phone}</p>
               </div>
+            </div>
+
+            <!-- Cursos Matriculados -->
+            <div class="space-y-3">
+              <div class="flex items-center gap-2">
+                <GraduationCap class="w-5 h-5 text-primary" />
+                <h3 class="font-semibold">Cursos Matriculados</h3>
+              </div>
+
+              {#if selectedParticipant.courses && selectedParticipant.courses.length > 0}
+                <div class="space-y-2">
+                  {#each selectedParticipant.courses as enrollment}
+                    <div class="p-3 border rounded-lg bg-accent/50">
+                      <div class="flex items-center justify-between mb-2">
+                        <p class="font-medium">{enrollment.courseName || 'Curso'}</p>
+                        <Badge class={getStatusBadge(enrollment.status)}>
+                          {getStatusText(enrollment.status)}
+                        </Badge>
+                      </div>
+                      <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Calendar class="w-3 h-3" />
+                        <span>Matriculado em: {formatDate(enrollment.enrolledAt)}</span>
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              {:else}
+                <p class="text-sm text-muted-foreground py-4 text-center">
+                  Nenhum curso matriculado ainda
+                </p>
+              {/if}
             </div>
 
             <!-- Formulário de Edição -->

@@ -183,7 +183,10 @@
             <div class="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors">
               <div class="flex-1">
                 <div class="flex items-center gap-2 mb-1">
-                  <p class="font-medium">{item.userName || 'Usuário'}</p>
+                  <p class="font-medium">{item.participantName || 'Participante'}</p>
+                  {#if item.participantPhone}
+                    <span class="text-xs text-muted-foreground">({item.participantPhone})</span>
+                  {/if}
                   <span class={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(item.payment.status)}`}>
                     {getStatusText(item.payment.status)}
                   </span>

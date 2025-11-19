@@ -10,7 +10,7 @@ import type { RequestEvent } from '@sveltejs/kit';
  * Usado para confirmar pagamento, cancelar, etc
  */
 export async function PATCH(event: RequestEvent) {
-    const user = await requireAuth(event);
+    await requireAuth(event); // Apenas verifica se está autenticado (admin)
     const paymentId = parseInt(event.params.id!);
 
     const { status, transactionId, paymentProof, notes } = await event.request.json();
@@ -23,11 +23,6 @@ export async function PATCH(event: RequestEvent) {
 
     if (!payment) {
         throw error(404, 'Pagamento não encontrado.');
-    }
-
-    // Verificar se o pagamento pertence ao usuário
-    if (payment.userId !== user.id) {
-        throw error(403, 'Você não tem permissão para atualizar este pagamento.');
     }
 
     // Preparar dados de atualização
@@ -70,7 +65,7 @@ export async function PATCH(event: RequestEvent) {
  * GET - Buscar detalhes de um pagamento
  */
 export async function GET(event: RequestEvent) {
-    const user = await requireAuth(event);
+    await requireAuth(event); // Apenas verifica se está autenticado (admin)
     const paymentId = parseInt(event.params.id!);
 
     const [payment] = await db
@@ -80,11 +75,6 @@ export async function GET(event: RequestEvent) {
 
     if (!payment) {
         throw error(404, 'Pagamento não encontrado.');
-    }
-
-    // Verificar se o pagamento pertence ao usuário
-    if (payment.userId !== user.id) {
-        throw error(403, 'Você não tem permissão para visualizar este pagamento.');
     }
 
     return json({ payment });

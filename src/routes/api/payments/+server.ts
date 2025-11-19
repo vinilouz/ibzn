@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { payments, courses } from '$lib/server/db/schema';
+import { payments, courses, participants } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { json } from '@sveltejs/kit';
 import { requireAuth } from '$lib/server/middleware/auth';
@@ -7,12 +7,16 @@ import type { RequestEvent } from '@sveltejs/kit';
 
 /**
  * POST - Criar um novo pagamento
- * Usado quando o usuário se inscreve em um curso
+ * Usado quando um participante se inscreve em um curso
  */
 export async function POST(event: RequestEvent) {
     const user = await requireAuth(event);
 
-    const { courseId, paymentMethod, discount = 0 } = await event.request.json();
+    const { courseId, participantId, paymentMethod, discount = 0 } = await event.request.json();
+
+    if (!participantId) {
+        return json({ error: 'ID do participante é obrigatório.' }, { status: 400 });
+    }
 
     // Buscar informações do curso
     const [course] = await db.select().from(courses).where(eq(courses.id, courseId));
@@ -21,13 +25,13 @@ export async function POST(event: RequestEvent) {
         return json({ error: 'Curso não encontrado.' }, { status: 404 });
     }
 
-    // Verificar se já existe um pagamento pendente para este usuário/curso
+    // Verificar se já existe um pagamento pendente para este participante/curso
     const [existingPayment] = await db
         .select()
         .from(payments)
         .where(
             and(
-                eq(payments.userId, user.id),
+                eq(payments.participantId, participantId),
                 eq(payments.courseId, courseId),
                 eq(payments.status, 'pending')
             )
@@ -49,16 +53,19 @@ export async function POST(event: RequestEvent) {
     }
 
     // Criar pagamento
+    const now = new Date().toISOString();
     const [payment] = await db
         .insert(payments)
         .values({
-            userId: user.id,
+            participantId: participantId,
             courseId: courseId,
             amount,
             discount,
             finalAmount,
             status: 'pending',
-            paymentMethod: paymentMethod || null
+            paymentMethod: paymentMethod || null,
+            createdAt: now,
+            updatedAt: now
         })
         .returning();
 
@@ -76,14 +83,17 @@ export async function POST(event: RequestEvent) {
 }
 
 /**
- * GET - Listar pagamentos do usuário
+ * GET - Listar todos os pagamentos com informações dos participantes
  */
 export async function GET(event: RequestEvent) {
-    const user = await requireAuth(event);
+    await requireAuth(event);
 
-    const userPayments = await db
+    const allPayments = await db
         .select({
             id: payments.id,
+            participantId: payments.participantId,
+            participantName: participants.name,
+            participantPhone: participants.phone,
             courseId: payments.courseId,
             courseName: courses.courseName,
             amount: payments.amount,
@@ -96,8 +106,8 @@ export async function GET(event: RequestEvent) {
         })
         .from(payments)
         .leftJoin(courses, eq(payments.courseId, courses.id))
-        .where(eq(payments.userId, user.id))
+        .leftJoin(participants, eq(payments.participantId, participants.id))
         .orderBy(payments.createdAt);
 
-    return json({ payments: userPayments });
+    return json({ payments: allPayments });
 }

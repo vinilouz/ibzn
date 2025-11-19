@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Card, CardHeader, CardContent } from '$lib/components/ui/card';
+  import { Card, CardContent } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Sheet, SheetContent, SheetHeader, SheetTitle } from '$lib/components/ui/sheet';
@@ -95,7 +95,10 @@
             <div class="flex-1">
               <div class="flex items-center gap-3 mb-2">
                 <DollarSign class="w-5 h-5 text-primary" />
-                <h3 class="font-semibold text-lg">{payment.userName || 'Usuário'}</h3>
+                <h3 class="font-semibold text-lg">{payment.participantName || 'Participante'}</h3>
+                {#if payment.participantPhone}
+                  <span class="text-sm text-muted-foreground">({payment.participantPhone})</span>
+                {/if}
                 <span class={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${getStatusColor(payment.payment.status)}`}>
                   <StatusIcon class="w-3 h-3" />
                   {getStatusText(payment.payment.status)}
@@ -266,16 +269,21 @@
             class="space-y-4"
           >
             <div>
-              <label for="userId" class="text-sm font-medium mb-2 block">Participante *</label>
+              <label for="participantId" class="text-sm font-medium mb-2 block">Participante *</label>
               <select
-                id="userId"
-                name="userId"
+                id="participantId"
+                name="participantId"
                 class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 required
               >
                 <option value="">Selecione um participante</option>
-                {#each data.users as user}
-                  <option value={user.id}>{user.name}</option>
+                {#each data.participants as participant}
+                  <option value={participant.id}>
+                    {participant.name}
+                    {#if participant.phone}
+                      - {participant.phone}
+                    {/if}
+                  </option>
                 {/each}
               </select>
             </div>

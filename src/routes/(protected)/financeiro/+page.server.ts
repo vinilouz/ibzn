@@ -1,21 +1,21 @@
 // src/routes/financeiro/+page.server.ts
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
-import { payments, courses, user, courseEnrollments } from '$lib/server/db/schema';
+import { payments, courses, participants, courseEnrollments } from '$lib/server/db/schema';
 import { eq, sql, and } from 'drizzle-orm';
 
 export const load: PageServerLoad = async () => {
-  // 1. Buscar todos os pagamentos com informações de curso e usuário
+  // 1. Buscar todos os pagamentos com informações de curso e participante
   const allPayments = await db
     .select({
       payment: payments,
       courseName: courses.courseName,
-      userName: user.name,
-      userEmail: user.email,
+      participantName: participants.name,
+      participantPhone: participants.phone,
     })
     .from(payments)
     .leftJoin(courses, eq(payments.courseId, courses.id))
-    .leftJoin(user, eq(payments.userId, user.id))
+    .leftJoin(participants, eq(payments.participantId, participants.id))
     .orderBy(sql`${payments.createdAt} DESC`);
 
   // 2. Calcular estatísticas financeiras

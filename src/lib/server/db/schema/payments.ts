@@ -1,6 +1,7 @@
 import { pgTable, serial, text, integer, doublePrecision, pgEnum, foreignKey } from "drizzle-orm/pg-core";
 import { user } from "./user";
 import { courses } from "./courses";
+import { participants } from "./participants";
 
 // Status do pagamento
 export const paymentStatusEnum = pgEnum("payment_status", [
@@ -24,7 +25,8 @@ export const payments = pgTable("payments", {
     id: serial("id").primaryKey(),
 
     // Relacionamentos
-    userId: text("user_id").notNull(),
+    userId: text("user_id"),
+    participantId: integer("participant_id"),
     courseId: integer("course_id").notNull(),
     enrollmentId: integer("enrollment_id"),
 
@@ -52,6 +54,11 @@ export const payments = pgTable("payments", {
         columns: [table.userId],
         foreignColumns: [user.id],
         name: "payments_user_id_fk"
+    }).onDelete("cascade"),
+    foreignKey({
+        columns: [table.participantId],
+        foreignColumns: [participants.id],
+        name: "payments_participant_id_fk"
     }).onDelete("cascade"),
     foreignKey({
         columns: [table.courseId],

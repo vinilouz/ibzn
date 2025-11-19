@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -85,23 +85,34 @@
 			const courseId = parseInt(id);
 			const course = data.courses?.find((c) => c.id === courseId);
 
-			if (course && editingCourse !== courseId) {
+			if (course) {
 				editingCourse = courseId;
-				formData = {
-					courseName: course.courseName || '',
-					description: course.description || '',
-					price: course.price?.toString() || '',
-					capacity: course.capacity?.toString() || '',
-					duration: course.duration?.toString() || '',
-					sessionsInfo: course.sessionsInfo || '',
-					startDate: course.startDate || '',
-					weekdays: course.weekdays || '',
-					startTime: course.startTime || '',
-					endTime: course.endTime || '',
-					teacher: course.teacher?.toString() || '',
-					room: course.room?.toString() || ''
-				};
+				// Usar setTimeout para garantir que os valores sejam atualizados após o render
+				setTimeout(() => {
+					formData = {
+						courseName: course.courseName || '',
+						description: course.description || '',
+						price: course.price?.toString() || '',
+						capacity: course.capacity?.toString() || '',
+						duration: course.duration?.toString() || '',
+						sessionsInfo: course.sessionsInfo || '',
+						startDate: course.startDate || '',
+						weekdays: course.weekdays || '',
+						startTime: course.startTime || '',
+						endTime: course.endTime || '',
+						teacher: course.teacher?.toString() || '',
+						room: course.room?.toString() || ''
+					};
+				}, 0);
 			}
+		} else if (view === 'create') {
+			// Limpar form ao criar novo
+			editingCourse = null;
+			formData = { ...initialFormData };
+		} else if (view === 'list' || !view) {
+			// Limpar ao voltar para lista
+			editingCourse = null;
+			formData = { ...initialFormData };
 		}
 	});
 
@@ -140,19 +151,32 @@
 	}
 
 	function handleFormSubmit() {
-		return async ({ update }: any) => {
-			// Navegar imediatamente sem esperar (UX mais rápida)
-			resetForm();
-			goto('/cursos?view=list');
-			// Atualizar dados em background
-			update({ reset: false });
+		return async ({ result, update }: any) => {
+			// Atualizar dados no servidor
+			await update();
+
+			if (result.type === 'success') {
+				// Invalidar todos os dados para forçar reload
+				await invalidateAll();
+				// Limpar form e navegar
+				resetForm();
+				goto('/cursos?view=list');
+			}
 		};
 	}
 
 	function handleDelete() {
-		return (e: Event) => {
-			if (!confirm('Tem certeza que deseja excluir este curso?')) {
-				e.preventDefault();
+		return async ({ cancel, result, update }: any) => {
+			// Confirmar antes de deletar
+			const confirmed = confirm('Tem certeza que deseja excluir este curso?');
+			if (!confirmed) {
+				cancel();
+				return;
+			}
+
+			await update();
+			if (result.type === 'success') {
+				await invalidateAll();
 			}
 		};
 	}
@@ -254,9 +278,8 @@
 												<form
 													method="POST"
 													action="?/delete"
-													use:enhance
+													use:enhance={handleDelete}
 													class="inline"
-													onsubmit={handleDelete()}
 												>
 													<input type="hidden" name="id" value={course.id} />
 													<Button type="submit" variant="destructive" size="sm">Excluir</Button>

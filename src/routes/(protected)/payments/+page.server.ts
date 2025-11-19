@@ -1,42 +1,42 @@
 // src/routes/payments/+page.server.ts
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
-import { payments, courseEnrollments } from '$lib/server/db/schema';
+import { payments, participants, courseEnrollments } from '$lib/server/db/schema';
 import { courses } from '$lib/server/db/schema/courses';
-import { user } from '$lib/server/db/schema/user';
 import { eq, desc, and } from 'drizzle-orm';
 
 export const load: PageServerLoad = async () => {
   try {
-    // Buscar todos os pagamentos com informações do curso e usuário
+    // Buscar todos os pagamentos com informações do curso e participante
     const allPayments = await db
       .select({
         payment: payments,
         courseName: courses.courseName,
-        userName: user.name,
+        participantName: participants.name,
+        participantPhone: participants.phone,
       })
       .from(payments)
       .leftJoin(courses, eq(payments.courseId, courses.id))
-      .leftJoin(user, eq(payments.userId, user.id))
+      .leftJoin(participants, eq(payments.participantId, participants.id))
       .orderBy(desc(payments.createdAt));
 
     // Buscar cursos para o dropdown
     const allCourses = await db.select().from(courses);
 
-    // Buscar usuários para o dropdown
-    const allUsers = await db.select().from(user);
+    // Buscar participantes para o dropdown
+    const allParticipants = await db.select().from(participants);
 
     return {
       payments: allPayments,
       courses: allCourses,
-      users: allUsers
+      participants: allParticipants
     };
   } catch (error) {
     console.error('Erro ao carregar pagamentos:', error);
     return {
       payments: [],
       courses: [],
-      users: []
+      participants: []
     };
   }
 };
@@ -45,7 +45,7 @@ export const actions: Actions = {
   create: async ({ request }) => {
     const data = await request.formData();
 
-    const userId = data.get('userId') as string;
+    const participantId = Number(data.get('participantId'));
     const courseId = Number(data.get('courseId'));
     const amount = Number(data.get('amount'));
     const discount = Number(data.get('discount') || 0);
@@ -60,7 +60,7 @@ export const actions: Actions = {
       : null;
 
     await db.insert(payments).values({
-      userId,
+      participantId,
       courseId,
       amount,
       discount,
@@ -109,31 +109,36 @@ export const actions: Actions = {
         .limit(1);
 
       if (payment.length > 0) {
-        const { userId, courseId } = payment[0];
+        const { participantId, courseId, finalAmount } = payment[0];
 
-        // Verificar se já não existe matrícula para evitar duplicatas
-        const existingEnrollment = await db
-          .select()
-          .from(courseEnrollments)
-          .where(
-            and(
-              eq(courseEnrollments.userId, userId),
-              eq(courseEnrollments.courseId, courseId)
+        if (participantId && courseId) {
+          // Verificar se já existe matrícula
+          const existingEnrollment = await db
+            .select()
+            .from(courseEnrollments)
+            .where(
+              and(
+                eq(courseEnrollments.participantId, participantId),
+                eq(courseEnrollments.courseId, courseId)
+              )
             )
-          )
-          .limit(1);
+            .limit(1);
 
-        // Se não existir, criar a matrícula
-        if (existingEnrollment.length === 0) {
-          await db.insert(courseEnrollments).values({
-            userId,
-            courseId,
-            enrolledAt: new Date().toISOString()
-          });
+          // Se não existir, criar a matrícula
+          if (existingEnrollment.length === 0) {
+            await db.insert(courseEnrollments).values({
+              participantId,
+              courseId,
+              amount: finalAmount || 0,
+              enrolledAt: new Date().toISOString(),
+              status: 'active',
+              notes: `Matrícula criada automaticamente pelo pagamento #${id}`
+            });
 
-          console.log(`Matrícula criada automaticamente: userId=${userId}, courseId=${courseId}`);
-        } else {
-          console.log(`ℹMatrícula já existe: userId=${userId}, courseId=${courseId}`);
+            console.log(`✅ Matrícula criada: participantId=${participantId}, courseId=${courseId}`);
+          } else {
+            console.log(`ℹ️ Matrícula já existe: participantId=${participantId}, courseId=${courseId}`);
+          }
         }
       }
     }
