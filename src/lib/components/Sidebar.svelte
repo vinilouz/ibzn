@@ -2,7 +2,7 @@
 	import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '$lib/components/ui/sidebar';
 	import { page } from '$app/stores';
 	import { Button } from '$lib/components/ui/button';
-	import { Home, Building2, Settings, LogOut, User, Plus, List, ChevronDown, Users, UserCircle, DollarSign, TrendingUp, BookOpenText, GraduationCap, ClipboardCheck } from 'lucide-svelte';
+	import { Home, Building2, Settings, LogOut, User, Plus, List, ChevronDown, Users, UserCircle, DollarSign, TrendingUp, BookOpenText, GraduationCap, ClipboardCheck, Calendar } from 'lucide-svelte';
 	import { Separator } from '$lib/components/ui/separator';
 	import { authClient } from '$lib/auth.client';
 	import Logo from '$lib/components/Logo.svelte';
@@ -46,6 +46,8 @@
 				return Settings;
 			case 'courses':
 				return BookOpenText;
+			case 'agendamentos':
+				return Calendar;
 			default:
 				return Home;
 		}
@@ -200,6 +202,7 @@
 							</div>
 						{/if}
 					</SidebarMenuItem>
+				
 				{:else}
 					<!-- Regular menu items -->
 					<SidebarMenuItem>

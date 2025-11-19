@@ -1,7 +1,8 @@
-import { pgTable, text, timestamp, foreignKey, integer, unique, date, boolean, serial, doublePrecision, time, varchar, pgEnum } from "drizzle-orm/pg-core"
+import { pgTable, text, timestamp, foreignKey, integer, unique, date, doublePrecision, boolean, serial, time, varchar, pgEnum } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 export const attendanceStatus = pgEnum("attendance_status", ['present', 'absent', 'late', 'excused'])
+export const enrollmentStatus = pgEnum("enrollment_status", ['active', 'cancelled', 'completed', 'pending'])
 export const paymentMethod = pgEnum("payment_method", ['pix', 'credit_card', 'debit_card', 'bank_transfer', 'boleto', 'cash'])
 export const paymentStatus = pgEnum("payment_status", ['pending', 'paid', 'cancelled', 'refunded'])
 export const role = pgEnum("role", ['admin', 'manager', 'user', 'guest'])
@@ -17,22 +18,24 @@ export const verification = pgTable("verification", {
 	updatedAt: timestamp("updated_at", { mode: 'string' }),
 });
 
-export const courseEnrollments = pgTable("course_enrollments", {
-	id: integer().primaryKey().generatedAlwaysAsIdentity({ name: "course_enrollments_id_seq", startWith: 1, increment: 1, minValue: 1, maxValue: 2147483647, cache: 1 }),
-	courseId: integer("course_id").notNull(),
-	enrolledAt: timestamp("enrolled_at", { mode: 'string' }).defaultNow().notNull(),
-	userId: text("user_id").notNull(),
+export const attendanceRecords = pgTable("attendance_records", {
+	id: integer().primaryKey().generatedAlwaysAsIdentity({ name: "attendance_records_id_seq", startWith: 1, increment: 1, minValue: 1, maxValue: 2147483647, cache: 1 }),
+	listId: integer("list_id").notNull(),
+	status: attendanceStatus().default('present').notNull(),
+	notes: text(),
+	markedAt: timestamp("marked_at", { mode: 'string' }).defaultNow().notNull(),
+	participantId: integer("participant_id").notNull(),
 }, (table) => [
 	foreignKey({
-			columns: [table.userId],
-			foreignColumns: [user.id],
-			name: "course_enrollments_user_id_fk"
+			columns: [table.listId],
+			foreignColumns: [attendanceLists.id],
+			name: "attendance_records_list_id_fkey"
 		}).onDelete("cascade"),
 	foreignKey({
-			columns: [table.courseId],
-			foreignColumns: [courses.id],
-			name: "course_enrollments_course_id_fk"
-		}).onDelete("cascade"),
+			columns: [table.participantId],
+			foreignColumns: [participants.id],
+			name: "attendance_records_participant_id_fkey"
+		}),
 ]);
 
 export const session = pgTable("session", {
@@ -96,24 +99,26 @@ export const account = pgTable("account", {
 		}).onDelete("cascade"),
 ]);
 
-export const attendanceRecords = pgTable("attendance_records", {
-	id: integer().primaryKey().generatedAlwaysAsIdentity({ name: "attendance_records_id_seq", startWith: 1, increment: 1, minValue: 1, maxValue: 2147483647, cache: 1 }),
-	listId: integer("list_id").notNull(),
-	studentId: text("student_id").notNull(),
-	status: attendanceStatus().default('present').notNull(),
+export const courseEnrollments = pgTable("course_enrollments", {
+	id: integer().primaryKey().generatedAlwaysAsIdentity({ name: "course_enrollments_id_seq", startWith: 1, increment: 1, minValue: 1, maxValue: 2147483647, cache: 1 }),
+	courseId: integer("course_id").notNull(),
+	enrolledAt: timestamp("enrolled_at", { mode: 'string' }).defaultNow().notNull(),
+	status: enrollmentStatus().default('active').notNull(),
+	amount: doublePrecision().notNull(),
+	cancelledAt: timestamp("cancelled_at", { mode: 'string' }),
 	notes: text(),
-	markedAt: timestamp("marked_at", { mode: 'string' }).defaultNow().notNull(),
+	participantId: integer("participant_id").notNull(),
 }, (table) => [
 	foreignKey({
-			columns: [table.listId],
-			foreignColumns: [attendanceLists.id],
-			name: "attendance_records_list_id_fkey"
+			columns: [table.courseId],
+			foreignColumns: [courses.id],
+			name: "course_enrollments_course_id_fk"
 		}).onDelete("cascade"),
 	foreignKey({
-			columns: [table.studentId],
-			foreignColumns: [user.id],
-			name: "attendance_records_student_id_fkey"
-		}),
+			columns: [table.participantId],
+			foreignColumns: [participants.id],
+			name: "course_enrollments_participant_id_fk"
+		}).onDelete("cascade"),
 ]);
 
 export const user = pgTable("user", {
@@ -171,36 +176,6 @@ export const courses = pgTable("courses", {
 		}).onDelete("cascade"),
 ]);
 
-export const payments = pgTable("payments", {
-	id: serial().primaryKey().notNull(),
-	userId: text("user_id").notNull(),
-	courseId: integer("course_id").notNull(),
-	enrollmentId: integer("enrollment_id"),
-	amount: doublePrecision().notNull(),
-	discount: doublePrecision().default(0),
-	finalAmount: doublePrecision("final_amount").notNull(),
-	status: paymentStatus().default('pending').notNull(),
-	paymentMethod: paymentMethod("payment_method"),
-	transactionId: text("transaction_id"),
-	paymentProof: text("payment_proof"),
-	notes: text(),
-	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().notNull(),
-	paidAt: timestamp("paid_at", { mode: 'string' }),
-	cancelledAt: timestamp("cancelled_at", { mode: 'string' }),
-}, (table) => [
-	foreignKey({
-			columns: [table.userId],
-			foreignColumns: [user.id],
-			name: "payments_user_id_fk"
-		}).onDelete("cascade"),
-	foreignKey({
-			columns: [table.courseId],
-			foreignColumns: [courses.id],
-			name: "payments_course_id_fk"
-		}).onDelete("cascade"),
-]);
-
 export const participants = pgTable("participants", {
 	id: serial().primaryKey().notNull(),
 	name: text().notNull(),
@@ -212,6 +187,74 @@ export const participants = pgTable("participants", {
 	joinedAt: timestamp("joined_at", { mode: 'string' }).defaultNow(),
 	lastSessionAt: timestamp("last_session_at", { mode: 'string' }),
 });
+
+export const payments = pgTable("payments", {
+	id: serial().primaryKey().notNull(),
+	userId: text("user_id"),
+	courseId: integer("course_id").notNull(),
+	enrollmentId: integer("enrollment_id"),
+	amount: doublePrecision().notNull(),
+	discount: doublePrecision().default(0),
+	finalAmount: doublePrecision("final_amount").notNull(),
+	status: paymentStatus().default('pending').notNull(),
+	paymentMethod: paymentMethod("payment_method"),
+	transactionId: text("transaction_id"),
+	paymentProof: text("payment_proof"),
+	notes: text(),
+	createdAt: text("created_at").notNull(),
+	updatedAt: text("updated_at").notNull(),
+	paidAt: text("paid_at"),
+	cancelledAt: text("cancelled_at"),
+	participantId: integer("participant_id"),
+}, (table) => [
+	foreignKey({
+			columns: [table.userId],
+			foreignColumns: [user.id],
+			name: "payments_user_id_fk"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.courseId],
+			foreignColumns: [courses.id],
+			name: "payments_course_id_fk"
+		}).onDelete("cascade"),
+	foreignKey({
+			columns: [table.participantId],
+			foreignColumns: [participants.id],
+			name: "payments_participant_id_fk"
+		}).onDelete("cascade"),
+]);
+
+export const appointments = pgTable("appointments", {
+	id: integer().primaryKey().generatedAlwaysAsIdentity({ name: "appointments_id_seq", startWith: 1, increment: 1, minValue: 1, maxValue: 2147483647, cache: 1 }),
+	name: text().notNull(),
+	email: text(),
+	phone: text(),
+	reason: text(),
+	dateTime: timestamp({ withTimezone: true, mode: 'string' }).notNull(),
+	isSignedUp: boolean("IsSignedUp").default(false).notNull(),
+	endTime: time(),
+	facilitatorId: integer(),
+	roomId: integer(),
+	participantId: integer(),
+	createdAt: timestamp({ withTimezone: true, mode: 'string' }).notNull(),
+	updatedAt: timestamp({ withTimezone: true, mode: 'string' }).notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.facilitatorId],
+			foreignColumns: [facilitators.id],
+			name: "facilitatorId"
+		}),
+	foreignKey({
+			columns: [table.roomId],
+			foreignColumns: [rooms.id],
+			name: "roomId"
+		}),
+	foreignKey({
+			columns: [table.participantId],
+			foreignColumns: [participants.id],
+			name: "participantId"
+		}),
+]);
 
 export const rooms = pgTable("rooms", {
 	id: serial().primaryKey().notNull(),

@@ -30,6 +30,11 @@
 			iconKey: "courses"
 		},
 		{
+			title: "Agendamentos",
+			url: "/calendar",
+			iconKey: "agendamentos"
+		},
+		{
 			title: "Matrículas",
 			url: "/matriculas",
 			iconKey: "matriculas"
