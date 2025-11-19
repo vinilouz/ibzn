@@ -32,7 +32,6 @@
 				return;
 			}
 
-			// Redirecionar após sucesso
 			await goto('/painel');
 		} catch (err: any) {
 			error = err.message || 'Erro ao fazer login. Verifique suas credenciais.';

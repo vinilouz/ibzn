@@ -218,8 +218,8 @@
 
 			<SidebarMenuItem>
 				<SidebarMenuButton
-					class="w-full justify-start h-12 rounded-lg transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:bg-sidebar-accent focus:text-sidebar-accent-foreground"
-					onclick={() => navigateTo('/painel/configuracoes')}
+					class="w-full justify-start h-12 rounded-lg transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:bg-sidebar-accent focus:text-sidebar-accent-foreground {$page.url.pathname === '/configuracoes' ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm' : ''}"
+					onclick={() => navigateTo('/configuracoes')}
 				>
 					<Settings class="h-5 w-5 mr-3" />
 					<span class="text-sm font-medium">Configurações</span>

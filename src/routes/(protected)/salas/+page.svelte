@@ -32,6 +32,7 @@
 
 	let editingRoom = $state<number | null>(null);
 	let localPreview = $state<string | null>(null);
+	let uploadingImage = $state(false);
 	
 	const initialFormData: RoomFormData = {
 		name: '',
@@ -105,11 +106,38 @@
 		goto('/salas?view=create');
 	}
 
-	function handleImageSelect(e: Event) {
+	async function handleImageSelect(e: Event) {
 		const input = e.target as HTMLInputElement;
 		const file = input.files?.[0];
-		if (file) {
-			localPreview = URL.createObjectURL(file);
+		if (!file) return;
+
+		localPreview = URL.createObjectURL(file);
+		uploadingImage = true;
+
+		const uploadFormData = new FormData();
+		uploadFormData.append('file', file);
+
+		try {
+			const response = await fetch('/api/upload', {
+				method: 'POST',
+				body: uploadFormData
+			});
+
+			const result = await response.json();
+
+			if (response.ok && result.url) {
+				formData.imageUrl = result.url;
+			} else {
+				console.error('Erro ao fazer upload:', result.error);
+				alert('Erro ao fazer upload da imagem: ' + (result.error || 'Erro desconhecido'));
+				localPreview = null;
+			}
+		} catch (error) {
+			console.error('Erro ao fazer upload:', error);
+			alert('Erro ao fazer upload da imagem');
+			localPreview = null;
+		} finally {
+			uploadingImage = false;
 		}
 	}
 
@@ -317,7 +345,14 @@
 					<div class="space-y-4">
 						<Label>Imagem da Sala</Label>
 						
-						{#if imagePreview}
+						{#if uploadingImage}
+							<div class="rounded-lg border-2 border-dashed p-8">
+								<div class="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+									<div class="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+									<span class="font-medium">Fazendo upload da imagem...</span>
+								</div>
+							</div>
+						{:else if imagePreview}
 							<div class="relative h-64 w-full overflow-hidden rounded-lg border">
 								<img
 									src={imagePreview}

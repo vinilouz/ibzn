@@ -38,7 +38,6 @@ export async function requireManager(event: RequestEvent) {
 	return user;
 }
 
-// ✅ Novas funções de capabilities
 export async function requireCapability(event: RequestEvent, capability: Capability) {
 	const user = await requireAuth(event);
 

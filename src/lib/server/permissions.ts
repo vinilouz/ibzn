@@ -1,13 +1,6 @@
-/**
- * Sistema de Permissões por Role
- *
- * Define o que cada tipo de usuário pode fazer no sistema
- */
-
 export type Role = 'admin' | 'manager' | 'user' | 'guest';
 
 export interface Permissions {
-  // Usuários
   canViewUsers: boolean;
   canCreateUsers: boolean;
   canEditUsers: boolean;
@@ -108,59 +101,57 @@ const rolePermissions: Record<Role, Permissions> = {
     canManageRoles: true,
   },
 
-  // MANAGER - Secretária/Gerente (Acesso Operacional Completo)
   manager: {
     canViewUsers: true,
-    canCreateUsers: false,      // ❌ Não pode criar usuários do SISTEMA (admin/manager)
-    canEditUsers: false,        // ❌ Não pode editar usuários do SISTEMA
-    canDeleteUsers: false,      // ❌ Não pode deletar usuários do SISTEMA
+    canCreateUsers: false,
+    canEditUsers: false,
+    canDeleteUsers: false,
 
     canViewCourses: true,
-    canCreateCourses: true,     // ✅ Pode criar cursos
-    canEditCourses: true,       // ✅ Pode editar cursos
-    canDeleteCourses: true,     // ✅ PODE deletar cursos
+    canCreateCourses: true,
+    canEditCourses: true,
+    canDeleteCourses: true,
 
     canViewRooms: true,
-    canCreateRooms: true,       // ✅ Pode criar salas
-    canEditRooms: true,         // ✅ Pode editar salas
-    canDeleteRooms: true,       // ✅ PODE deletar salas
+    canCreateRooms: true,
+    canEditRooms: true,
+    canDeleteRooms: true,
 
     canViewPayments: true,
-    canCreatePayments: true,    // ✅ Pode registrar pagamentos
-    canEditPayments: true,      // ✅ Pode alterar status de pagamentos
-    canDeletePayments: true,    // ✅ PODE deletar pagamentos
-    canRefundPayments: true,    // ✅ PODE fazer reembolsos
+    canCreatePayments: true,
+    canEditPayments: true,
+    canDeletePayments: true,
+    canRefundPayments: true,
 
     canViewEnrollments: true,
-    canCreateEnrollments: true, // ✅ Pode matricular participantes
-    canEditEnrollments: true,   // ✅ Pode editar matrículas
-    canDeleteEnrollments: true, // ✅ PODE deletar matrículas
+    canCreateEnrollments: true,
+    canEditEnrollments: true,
+    canDeleteEnrollments: true,
 
     canViewFacilitators: true,
-    canCreateFacilitators: true,// ✅ Pode cadastrar professores
-    canEditFacilitators: true,  // ✅ Pode editar professores
-    canDeleteFacilitators: true,// ✅ PODE deletar professores
+    canCreateFacilitators: true,
+    canEditFacilitators: true,
+    canDeleteFacilitators: true,
 
     canViewParticipants: true,
-    canCreateParticipants: true,// ✅ Pode cadastrar participantes
-    canEditParticipants: true,  // ✅ Pode editar participantes
-    canDeleteParticipants: true,// ✅ PODE deletar participantes
+    canCreateParticipants: true,
+    canEditParticipants: true,
+    canDeleteParticipants: true,
 
-    canViewFinancialReports: true, // ✅ Pode ver relatórios
-    canExportData: true,           // ✅ Pode exportar dados
+    canViewFinancialReports: true,
+    canExportData: true,
 
-    canAccessSettings: false,      // ❌ NÃO pode acessar configurações do sistema
-    canManageRoles: false,         // ❌ NÃO pode gerenciar permissões/roles
+    canAccessSettings: false,
+    canManageRoles: false,
   },
 
-  // USER - Participante (Acesso Muito Limitado - Caso seja implementado portal do aluno)
   user: {
     canViewUsers: false,
     canCreateUsers: false,
     canEditUsers: false,
     canDeleteUsers: false,
 
-    canViewCourses: true,        // Pode ver cursos disponíveis
+    canViewCourses: true,
     canCreateCourses: false,
     canEditCourses: false,
     canDeleteCourses: false,
@@ -170,13 +161,13 @@ const rolePermissions: Record<Role, Permissions> = {
     canEditRooms: false,
     canDeleteRooms: false,
 
-    canViewPayments: false,      // Vê apenas seus próprios pagamentos
+    canViewPayments: false,
     canCreatePayments: false,
     canEditPayments: false,
     canDeletePayments: false,
     canRefundPayments: false,
 
-    canViewEnrollments: false,   // Vê apenas suas próprias matrículas
+    canViewEnrollments: false,
     canCreateEnrollments: false,
     canEditEnrollments: false,
     canDeleteEnrollments: false,

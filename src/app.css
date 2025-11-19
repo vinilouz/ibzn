@@ -172,6 +172,15 @@
 
 body {
   letter-spacing: var(--tracking-normal);
+  min-height: 100vh;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img, video {
+  max-width: 100%;
+  height: auto;
 }
 
 @layer base {

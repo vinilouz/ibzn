@@ -10,7 +10,7 @@ import type { RequestEvent } from '@sveltejs/kit';
  * Usado para confirmar pagamento, cancelar, etc
  */
 export async function PATCH(event: RequestEvent) {
-    await requireAuth(event); // Apenas verifica se está autenticado (admin)
+    await requireAuth(event);
     const paymentId = parseInt(event.params.id!);
 
     const { status, transactionId, paymentProof, notes } = await event.request.json();
@@ -25,7 +25,6 @@ export async function PATCH(event: RequestEvent) {
         throw error(404, 'Pagamento não encontrado.');
     }
 
-    // Preparar dados de atualização
     const updateData: any = {
         updatedAt: new Date().toISOString()
     };
@@ -65,7 +64,7 @@ export async function PATCH(event: RequestEvent) {
  * GET - Buscar detalhes de um pagamento
  */
 export async function GET(event: RequestEvent) {
-    await requireAuth(event); // Apenas verifica se está autenticado (admin)
+    await requireAuth(event);
     const paymentId = parseInt(event.params.id!);
 
     const [payment] = await db

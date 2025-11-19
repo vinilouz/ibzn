@@ -5,13 +5,10 @@ import { participants, courseEnrollments, courses } from '$lib/server/db/schema'
 import { eq } from 'drizzle-orm';
 
 export const load = async () => {
-  // Buscar todos os participantes
   const allParticipants = await db.select().from(participants);
 
-  // Buscar todos os cursos disponíveis
   const allCourses = await db.select().from(courses);
 
-  // Buscar matrículas com informações dos cursos
   const enrollments = await db
     .select({
       enrollmentId: courseEnrollments.id,
@@ -25,7 +22,6 @@ export const load = async () => {
     .from(courseEnrollments)
     .leftJoin(courses, eq(courseEnrollments.courseId, courses.id));
 
-  // Organizar matrículas por participante
   const participantsWithCourses = allParticipants.map(participant => ({
     ...participant,
     courses: enrollments.filter(e => e.participantId === participant.id)

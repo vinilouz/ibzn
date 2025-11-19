@@ -1,9 +1,10 @@
 <script lang="ts">
+  import { enhance } from '$app/forms';
   import { Card, CardHeader, CardContent } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Sheet, SheetContent, SheetHeader, SheetTitle } from '$lib/components/ui/sheet';
-  import { enhance } from '$app/forms';
+  import { enhanceWithLoadingAndCallback } from '$lib/utils/enhance';
   import { Plus, Pencil, Trash2, Users } from 'lucide-svelte';
   
   export let data;
@@ -124,14 +125,7 @@
             <form 
               method="POST" 
               action="?/update" 
-              use:enhance={() => {
-                return async ({ result, update }) => {
-                  if (result.type === 'success') {
-                    closeDrawer();
-                  }
-                  await update();
-                };
-              }}
+              use:enhance={enhanceWithLoadingAndCallback(closeDrawer)}
               class="space-y-4"
             >
               <input type="hidden" name="id" value={selectedFacilitator.id} />
@@ -173,14 +167,7 @@
             <form 
               method="POST" 
               action="?/delete" 
-              use:enhance={() => {
-                return async ({ result, update }) => {
-                  if (result.type === 'success') {
-                    closeDrawer();
-                  }
-                  await update();
-                };
-              }}
+              use:enhance={enhanceWithLoadingAndCallback(closeDrawer)}
             >
               <input type="hidden" name="id" value={selectedFacilitator.id} />
               <Button variant="destructive" type="submit" class="w-full">
@@ -194,16 +181,7 @@
           <form 
             method="POST" 
             action="?/create" 
-            use:enhance={() => {
-              console.log('Enviando formulário de criação');
-              return async ({ result, update }) => {
-                console.log('Resultado:', result);
-                if (result.type === 'success') {
-                  closeDrawer();
-                }
-                await update();
-              };
-            }}
+            use:enhance={enhanceWithLoadingAndCallback(closeDrawer)}
             class="space-y-4"
           >
             <div>

@@ -7,7 +7,6 @@ import { eq, desc, and } from 'drizzle-orm';
 
 export const load: PageServerLoad = async () => {
   try {
-    // Buscar todos os pagamentos com informações do curso e participante
     const allPayments = await db
       .select({
         payment: payments,
@@ -99,9 +98,7 @@ export const actions: Actions = {
       .set(updateData)
       .where(eq(payments.id, id));
 
-    // Criar matrícula quando pagamento for confirmado
     if (status === 'paid') {
-      // Buscar informações do pagamento
       const payment = await db
         .select()
         .from(payments)
@@ -112,7 +109,6 @@ export const actions: Actions = {
         const { participantId, courseId, finalAmount } = payment[0];
 
         if (participantId && courseId) {
-          // Verificar se já existe matrícula
           const existingEnrollment = await db
             .select()
             .from(courseEnrollments)
@@ -124,7 +120,6 @@ export const actions: Actions = {
             )
             .limit(1);
 
-          // Se não existir, criar a matrícula
           if (existingEnrollment.length === 0) {
             await db.insert(courseEnrollments).values({
               participantId,

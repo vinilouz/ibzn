@@ -3,12 +3,11 @@ import { attendanceLists } from "./attendanceLists";
 import { participants } from "./participants";
 import { text } from "drizzle-orm/pg-core";
 
-// Status de presença
 export const attendanceStatusEnum = pgEnum("attendance_status", [
-    'present',   // Presente
-    'absent',    // Ausente
-    'late',      // Atrasado
-    'excused'    // Justificado
+    'present',
+    'absent',
+    'late',
+    'excused'
 ]);
 
 export const attendanceRecords = pgTable("attendance_records", {

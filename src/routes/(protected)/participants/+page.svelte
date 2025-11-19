@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { enhance } from '$app/forms';
   import { Card, CardHeader, CardContent } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Sheet, SheetContent, SheetHeader, SheetTitle } from '$lib/components/ui/sheet';
   import { Badge } from '$lib/components/ui/badge';
-  import { enhance } from '$app/forms';
+  import { enhanceWithLoadingAndCallback } from '$lib/utils/enhance';
   import { Plus, Pencil, Trash2, User, GraduationCap, Calendar } from 'lucide-svelte';
 
   function formatDate(dateString: string) {
@@ -183,7 +184,7 @@
             </div>
 
             <!-- Formulário de Edição -->
-            <form method="POST" action="?/update" use:enhance on:submit={closeDrawer} class="space-y-4">
+            <form method="POST" action="?/update" use:enhance={enhanceWithLoadingAndCallback(closeDrawer)} class="space-y-4">
               <input type="hidden" name="id" value={selectedParticipant.id} />
               
               <div>
@@ -220,7 +221,7 @@
             </form>
 
             <!-- Botão Excluir -->
-            <form method="POST" action="?/delete" use:enhance on:submit={closeDrawer}>
+            <form method="POST" action="?/delete" use:enhance={enhanceWithLoadingAndCallback(closeDrawer)}>
               <input type="hidden" name="id" value={selectedParticipant.id} />
               <Button variant="destructive" type="submit" class="w-full">
                 <Trash2 class="w-4 h-4 mr-2" />
@@ -233,16 +234,7 @@
           <form 
             method="POST" 
             action="?/create" 
-            use:enhance={() => {
-              console.log('Enviando formulário de criação');
-              return async ({ result, update }) => {
-                console.log('Resultado:', result);
-                if (result.type === 'success') {
-                  closeDrawer();
-                }
-                await update();
-              };
-            }}
+            use:enhance={enhanceWithLoadingAndCallback(closeDrawer)}
             class="space-y-4"
           >
             <div>

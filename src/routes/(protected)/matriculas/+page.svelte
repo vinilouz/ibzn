@@ -173,7 +173,7 @@
 				</CardContent>
 			</Card>
 
-			<Card class="cursor-pointer transition-all hover:shadow-md bg-green-50 {statusFilter === 'active' ? 'ring-2 ring-green-500' : ''}" onclick={() => statusFilter = 'active'}>
+			<Card class="cursor-pointer transition-all hover:shadow-md {statusFilter === 'active' ? 'ring-2 ring-green-500' : ''}" onclick={() => statusFilter = 'active'}>
 				<CardContent class="pt-6">
 					<div class="text-center">
 						<p class="text-2xl font-bold text-green-600">{stats.active}</p>
@@ -182,7 +182,7 @@
 				</CardContent>
 			</Card>
 
-			<Card class="cursor-pointer transition-all hover:shadow-md bg-yellow-50 {statusFilter === 'pending' ? 'ring-2 ring-yellow-500' : ''}" onclick={() => statusFilter = 'pending'}>
+			<Card class="cursor-pointer transition-all hover:shadow-md {statusFilter === 'pending' ? 'ring-2 ring-yellow-500' : ''}" onclick={() => statusFilter = 'pending'}>
 				<CardContent class="pt-6">
 					<div class="text-center">
 						<p class="text-2xl font-bold text-yellow-600">{stats.pending}</p>
@@ -191,7 +191,7 @@
 				</CardContent>
 			</Card>
 
-			<Card class="cursor-pointer transition-all hover:shadow-md bg-blue-50 {statusFilter === 'completed' ? 'ring-2 ring-blue-500' : ''}" onclick={() => statusFilter = 'completed'}>
+			<Card class="cursor-pointer transition-all hover:shadow-md {statusFilter === 'completed' ? 'ring-2 ring-blue-500' : ''}" onclick={() => statusFilter = 'completed'}>
 				<CardContent class="pt-6">
 					<div class="text-center">
 						<p class="text-2xl font-bold text-blue-600">{stats.completed}</p>
@@ -200,7 +200,7 @@
 				</CardContent>
 			</Card>
 
-			<Card class="cursor-pointer transition-all hover:shadow-md bg-red-50 {statusFilter === 'cancelled' ? 'ring-2 ring-red-500' : ''}" onclick={() => statusFilter = 'cancelled'}>
+			<Card class="cursor-pointer transition-all hover:shadow-md {statusFilter === 'cancelled' ? 'ring-2 ring-red-500' : ''}" onclick={() => statusFilter = 'cancelled'}>
 				<CardContent class="pt-6">
 					<div class="text-center">
 						<p class="text-2xl font-bold text-red-600">{stats.cancelled}</p>

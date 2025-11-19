@@ -87,7 +87,6 @@
 
 			if (course) {
 				editingCourse = courseId;
-				// Usar setTimeout para garantir que os valores sejam atualizados após o render
 				setTimeout(() => {
 					formData = {
 						courseName: course.courseName || '',
@@ -156,7 +155,6 @@
 			await update();
 
 			if (result.type === 'success') {
-				// Invalidar todos os dados para forçar reload
 				await invalidateAll();
 				// Limpar form e navegar
 				resetForm();

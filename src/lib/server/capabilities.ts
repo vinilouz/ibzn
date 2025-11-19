@@ -1,13 +1,4 @@
-/**
- * Sistema de Capabilities (Permissões)
- * Define as permissões disponíveis no sistema e quais roles têm acesso a cada uma.
- */
-
 import type { Role } from './middleware/auth';
-
-// ============================================
-// Definição de todas as capabilities
-// ============================================
 
 export const CAPABILITIES = {
 	// Courses (Cursos)
@@ -24,7 +15,6 @@ export const CAPABILITIES = {
 	ROOMS_UPDATE: 'rooms.update',
 	ROOMS_DELETE: 'rooms.delete',
 
-	// Users (Usuários)
 	USERS_VIEW: 'users.view',
 	USERS_CREATE: 'users.create',
 	USERS_UPDATE: 'users.update',
@@ -120,36 +110,20 @@ export const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
 	]
 };
 
-// ============================================
-// Funções auxiliares
-// ============================================
-
-/**
- * Verifica se uma role possui uma capability específica
- */
 export function roleHasCapability(role: Role, capability: Capability): boolean {
 	return ROLE_CAPABILITIES[role].includes(capability);
 }
 
-/**
- * Verifica se uma role possui TODAS as capabilities especificadas
- */
 export function roleHasAllCapabilities(role: Role, capabilities: Capability[]): boolean {
 	const roleCapabilities = ROLE_CAPABILITIES[role];
 	return capabilities.every((cap) => roleCapabilities.includes(cap));
 }
 
-/**
- * Verifica se uma role possui QUALQUER UMA das capabilities especificadas
- */
 export function roleHasAnyCapability(role: Role, capabilities: Capability[]): boolean {
 	const roleCapabilities = ROLE_CAPABILITIES[role];
 	return capabilities.some((cap) => roleCapabilities.includes(cap));
 }
 
-/**
- * Retorna todas as capabilities de uma role
- */
 export function getRoleCapabilities(role: Role): Capability[] {
 	return ROLE_CAPABILITIES[role];
 }

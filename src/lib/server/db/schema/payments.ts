@@ -3,15 +3,13 @@ import { user } from "./user";
 import { courses } from "./courses";
 import { participants } from "./participants";
 
-// Status do pagamento
 export const paymentStatusEnum = pgEnum("payment_status", [
-    'pending',    // Aguardando pagamento
-    'paid',       // Pago
-    'cancelled',  // Cancelado
-    'refunded'    // Reembolsado
+    'pending',
+    'paid',
+    'cancelled',
+    'refunded'
 ]);
 
-// Método de pagamento
 export const paymentMethodEnum = pgEnum("payment_method", [
     'pix',
     'credit_card',
@@ -33,22 +31,19 @@ export const payments = pgTable("payments", {
     // Valores
     amount: doublePrecision("amount").notNull(), // Valor do curso
     discount: doublePrecision("discount").default(0), // Desconto aplicado
-    finalAmount: doublePrecision("final_amount").notNull(), // Valor final = amount - discount
+    finalAmount: doublePrecision("final_amount").notNull(),
 
-    // Status e método
     status: paymentStatusEnum("status").default('pending').notNull(),
     paymentMethod: paymentMethodEnum("payment_method"),
 
-    // Informações adicionais
-    transactionId: text("transaction_id"), // ID da transação (ex: do gateway de pagamento)
-    paymentProof: text("payment_proof"), // URL do comprovante (se houver)
-    notes: text("notes"), // Observações
+    transactionId: text("transaction_id"),
+    paymentProof: text("payment_proof"),
+    notes: text("notes"),
 
-    // Datas
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
-    paidAt: text("paid_at"), // Quando foi pago
-    cancelledAt: text("cancelled_at"), // Quando foi cancelado
+    paidAt: text("paid_at"),
+    cancelledAt: text("cancelled_at"),
 }, (table) => [
     foreignKey({
         columns: [table.userId],

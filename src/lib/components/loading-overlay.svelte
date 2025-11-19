@@ -1,14 +1,17 @@
 <script lang="ts">
 	import { navigating } from '$app/stores';
+	import { isLoading } from '$lib/stores/loading';
 	import { fade } from 'svelte/transition';
 	import { onDestroy } from 'svelte';
 
 	let showOverlay = $state(false);
 	let minDisplayTimeout: ReturnType<typeof setTimeout> | null = null;
 
-	// Ensure overlay shows for at least a minimum duration
+	// Show overlay when navigating OR when manually triggered
 	$effect(() => {
-		if ($navigating) {
+		const shouldShow = $navigating !== null || $isLoading;
+		
+		if (shouldShow) {
 			showOverlay = true;
 			// Clear any existing timeout
 			if (minDisplayTimeout) {
@@ -16,7 +19,7 @@
 				minDisplayTimeout = null;
 			}
 		} else if (showOverlay) {
-			// When navigation ends, keep showing for minimum 300ms
+			// When navigation/loading ends, keep showing for minimum 300ms
 			minDisplayTimeout = setTimeout(() => {
 				showOverlay = false;
 				minDisplayTimeout = null;
@@ -34,17 +37,17 @@
 
 {#if showOverlay}
 	<div 
-		class="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center"
+		class="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center"
 		style="z-index: 99999;"
-		in:fade={{ duration: 100 }}
-		out:fade={{ duration: 200 }}
+		in:fade={{ duration: 150 }}
+		out:fade={{ duration: 150 }}
 	>
-		<div class="relative bg-background/90 p-8 rounded-lg shadow-2xl">
+		<div class="relative bg-card p-8 rounded-xl shadow-2xl border border-border">
 			<!-- Spinner Circle -->
-			<div class="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto"></div>
+			<div class="w-12 h-12 border-4 border-muted border-t-primary rounded-full animate-spin mx-auto"></div>
 			
 			<!-- Optional: Loading text -->
-			<p class="mt-4 text-sm font-medium text-foreground text-center">
+			<p class="mt-4 text-sm font-medium text-muted-foreground text-center">
 				Carregando...
 			</p>
 		</div>

@@ -5,7 +5,6 @@ import { payments, courses, participants, courseEnrollments } from '$lib/server/
 import { eq, sql, and } from 'drizzle-orm';
 
 export const load: PageServerLoad = async () => {
-  // 1. Buscar todos os pagamentos com informações de curso e participante
   const allPayments = await db
     .select({
       payment: payments,
@@ -18,7 +17,6 @@ export const load: PageServerLoad = async () => {
     .leftJoin(participants, eq(payments.participantId, participants.id))
     .orderBy(sql`${payments.createdAt} DESC`);
 
-  // 2. Calcular estatísticas financeiras
   const stats = {
     totalReceita: 0,
     totalPendente: 0,
@@ -69,13 +67,10 @@ export const load: PageServerLoad = async () => {
 
   const receitaPorCursoArray = Object.values(receitaPorCurso).sort((a, b) => b.total - a.total);
 
-  // 4. Buscar todos os cursos para estatísticas
   const allCourses = await db.select().from(courses);
 
-  // 5. Para cada curso, contar pagantes vs não-pagantes
   const cursosComEstatisticas = await Promise.all(
     allCourses.map(async (course) => {
-      // Total de matrículas
       const enrollments = await db
         .select()
         .from(courseEnrollments)

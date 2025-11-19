@@ -45,7 +45,6 @@
 				return;
 			}
 
-			// Redirecionar após sucesso
 			await goto('/painel');
 		} catch (err: any) {
 			error = err.message || 'Erro ao criar conta. Verifique os dados e tente novamente.';

@@ -10,7 +10,7 @@ import type { RequestEvent } from '@sveltejs/kit';
  * Usado quando um participante se inscreve em um curso
  */
 export async function POST(event: RequestEvent) {
-    const user = await requireAuth(event);
+    await requireAuth(event);
 
     const { courseId, participantId, paymentMethod, discount = 0 } = await event.request.json();
 
@@ -18,14 +18,12 @@ export async function POST(event: RequestEvent) {
         return json({ error: 'ID do participante é obrigatório.' }, { status: 400 });
     }
 
-    // Buscar informações do curso
     const [course] = await db.select().from(courses).where(eq(courses.id, courseId));
 
     if (!course) {
         return json({ error: 'Curso não encontrado.' }, { status: 404 });
     }
 
-    // Verificar se já existe um pagamento pendente para este participante/curso
     const [existingPayment] = await db
         .select()
         .from(payments)

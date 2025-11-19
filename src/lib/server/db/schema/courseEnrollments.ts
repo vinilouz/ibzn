@@ -2,13 +2,12 @@ import { pgTable, integer, text, timestamp, doublePrecision, foreignKey, pgEnum 
 import { courses } from "./courses";
 import { participants } from "./participants";
 
-// Status da matrícula
 export const enrollmentStatusEnum = pgEnum("enrollment_status", [
-    'active',     // Ativo
-    'completed',  // Concluído
-    'cancelled',  // Cancelado
-    'dropped',    // Desistente
-    'pending'     // Pendente
+    'active',
+    'completed',
+    'cancelled',
+    'dropped',
+    'pending'
 ]);
 
 export const courseEnrollments = pgTable("course_enrollments", {
