@@ -2,7 +2,7 @@
 	import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '$lib/components/ui/sidebar';
 	import { page } from '$app/stores';
 	import { Button } from '$lib/components/ui/button';
-	import { Home, Building2, Settings, LogOut, User, Plus, List, ChevronDown, Users, UserCircle, DollarSign, TrendingUp, BookOpenText } from 'lucide-svelte';
+	import { Home, Building2, Settings, LogOut, User, Plus, List, ChevronDown, Users, UserCircle, DollarSign, TrendingUp, BookOpenText, GraduationCap, ClipboardCheck } from 'lucide-svelte';
 	import { Separator } from '$lib/components/ui/separator';
 	import { authClient } from '$lib/auth.client';
 	import Logo from '$lib/components/Logo.svelte';
@@ -34,6 +34,10 @@
 				return Users;
 			case 'clientes':
 				return UserCircle;
+			case 'matriculas':
+				return GraduationCap;
+			case 'presenca':
+				return ClipboardCheck;
 			case 'pagamentos':
 				return DollarSign;
 			case 'financeiro':
@@ -48,24 +52,24 @@
 	};
 
 	const navigateTo = (url: string) => {
-		window.location.href = url;
+		goto(url);
 	};
 
 	const handleSignOut = async () => {
 		await authClient.signOut();
-		window.location.href = '/login';
+		goto('/login');
 	};
 
 	</script>
 
-<Sidebar class="border-r bg-background/95 backdrop-blur-sm">
+<Sidebar class="border-r bg-background/95 backdrop-blur-sm sidebar-custom-scrollbar">
 	<SidebarHeader class="border-b border-sidebar-border">
 		<div class="flex items-center justify-center p-6">
 			<Logo fill="#fff" width={160} />
 		</div>
 	</SidebarHeader>
 
-	<SidebarContent class="px-4 py-6 flex flex-col h-full">
+	<SidebarContent class="px-4 py-6 flex flex-col h-full custom-scrollbar">
 		<SidebarMenu class="space-y-3 flex-1">
 			{#each sidebarItems as item}
 				{@const IconComponent = getIcon(item.iconKey)}
@@ -252,3 +256,29 @@
 		</div>
 	</SidebarFooter>
 </Sidebar>
+
+<style>
+	/* Custom scrollbar styling - minimal and always visible */
+	:global(.custom-scrollbar) {
+		scrollbar-width: thin;
+		scrollbar-color: hsl(var(--muted-foreground) / 0.15) transparent;
+	}
+
+	:global(.custom-scrollbar::-webkit-scrollbar) {
+		width: 4px;
+	}
+
+	:global(.custom-scrollbar::-webkit-scrollbar-track) {
+		background: transparent;
+	}
+
+	:global(.custom-scrollbar::-webkit-scrollbar-thumb) {
+		background-color: hsl(var(--muted-foreground) / 0.15);
+		border-radius: 2px;
+		transition: background-color 0.2s ease;
+	}
+
+	:global(.custom-scrollbar::-webkit-scrollbar-thumb:hover) {
+		background-color: hsl(var(--muted-foreground) / 0.3);
+	}
+</style>

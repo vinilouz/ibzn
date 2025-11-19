@@ -7,7 +7,8 @@ export const enrollmentStatusEnum = pgEnum("enrollment_status", [
     'active',     // Ativo
     'completed',  // Concluído
     'cancelled',  // Cancelado
-    'dropped'     // Desistente
+    'dropped',    // Desistente
+    'pending'     // Pendente
 ]);
 
 export const courseEnrollments = pgTable("course_enrollments", {

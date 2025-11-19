@@ -1,6 +1,7 @@
-import { pgTable, integer, text, timestamp, pgEnum, foreignKey } from "drizzle-orm/pg-core";
+import { pgTable, integer, timestamp, pgEnum, foreignKey } from "drizzle-orm/pg-core";
 import { attendanceLists } from "./attendanceLists";
-import { user } from "./user";
+import { participants } from "./participants";
+import { text } from "drizzle-orm/pg-core";
 
 // Status de presença
 export const attendanceStatusEnum = pgEnum("attendance_status", [
@@ -13,7 +14,7 @@ export const attendanceStatusEnum = pgEnum("attendance_status", [
 export const attendanceRecords = pgTable("attendance_records", {
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
     listId: integer("list_id").notNull(),
-    studentId: text("student_id").notNull(),
+    participantId: integer("participant_id").notNull(),
     status: attendanceStatusEnum("status").default('present').notNull(),
     notes: text("notes"),
     markedAt: timestamp("marked_at", { mode: 'string' }).defaultNow().notNull(),
@@ -24,8 +25,8 @@ export const attendanceRecords = pgTable("attendance_records", {
         name: "attendance_records_list_id_fkey"
     }).onDelete("cascade"),
     foreignKey({
-        columns: [table.studentId],
-        foreignColumns: [user.id],
-        name: "attendance_records_student_id_fkey"
+        columns: [table.participantId],
+        foreignColumns: [participants.id],
+        name: "attendance_records_participant_id_fkey"
     })
 ]);
