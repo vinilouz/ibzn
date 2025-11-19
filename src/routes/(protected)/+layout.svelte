@@ -1,26 +1,12 @@
 <script lang="ts">
-	import { authClient } from '$lib/auth.client';
-	import { onMount } from 'svelte';
 	import { SidebarProvider, SidebarInset, SidebarTrigger } from '$lib/components/ui/sidebar';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import { Separator } from '$lib/components/ui/separator';
 	import { ModeWatcher } from 'mode-watcher'; 
 	import ThemeButton from '$lib/components/theme-button.svelte'; 
 
-	let { children } = $props();
-	let user: any = $state(null);
-	let loading = $state(true);
-
-	onMount(async () => {
-		const session = await authClient.getSession();
-		user = session.data?.user || null;
-		loading = false;
-
-		
-		if (!user) {
-			window.location.href = '/login';
-		}
-	});
+	let { children, data } = $props();
+	const user = data.user;
 
 	const sidebarItems = $derived([
 		{
@@ -34,17 +20,24 @@
 			iconKey: "salas"
 		},
 		{
-
 			title: "Pessoas",
 			url: "#",
 			iconKey: "pessoas"
 		},
 		{
-
 			title: "Cursos",
 			url: "/cursos",
 			iconKey: "courses"
-
+		},
+		{
+			title: "Matrículas",
+			url: "/matriculas",
+			iconKey: "matriculas"
+		},
+		{
+			title: "Presença",
+			url: "/presenca",
+			iconKey: "presenca"
 		},
 		{
 			title: "Financeiro",
@@ -61,14 +54,9 @@
 
 <ModeWatcher />
 
-{#if loading}
-	<div class="flex items-center justify-center min-h-screen">
-		<div class="text-center">Carregando...</div>
-	</div>
-{:else if user}
-	<SidebarProvider>
-		<Sidebar {sidebarItems} user={user} />
-		<SidebarInset>
+<SidebarProvider>
+	<Sidebar {sidebarItems} user={user} />
+	<SidebarInset>
 			<header class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]:h-12">
 				<div class="flex items-center gap-2 px-4 w-full">
 					<SidebarTrigger class="-ml-1" />
@@ -99,4 +87,3 @@
 			</main>
 		</SidebarInset>
 	</SidebarProvider>
-{/if}
