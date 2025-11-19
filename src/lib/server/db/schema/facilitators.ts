@@ -1,3 +1,4 @@
+
 import { pgTable, serial, text, date, timestamp } from 'drizzle-orm/pg-core';
 
 export const facilitators = pgTable('facilitators', {

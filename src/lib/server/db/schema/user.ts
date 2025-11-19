@@ -1,3 +1,4 @@
+
 import { pgTable, text, timestamp, boolean, pgEnum } from 'drizzle-orm/pg-core';
 
 export const roleEnum = pgEnum('role', ['admin', 'manager', 'user', 'guest']);

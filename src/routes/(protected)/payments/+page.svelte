@@ -186,11 +186,14 @@
             <!-- Status atual -->
             <div class="p-4 border rounded-lg">
               <p class="text-sm text-muted-foreground mb-2">Status Atual</p>
-              <div class={`px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${getStatusColor(selectedPayment.payment.status)}`}>
+              {#snippet statusDisplay()}
                 {@const StatusIcon = getStatusIcon(selectedPayment.payment.status)}
-                <StatusIcon class="w-4 h-4" />
-                {getStatusText(selectedPayment.payment.status)}
-              </div>
+                <div class={`px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${getStatusColor(selectedPayment.payment.status)}`}>
+                  <StatusIcon class="w-4 h-4" />
+                  {getStatusText(selectedPayment.payment.status)}
+                </div>
+              {/snippet}
+              {@render statusDisplay()}
             </div>
 
             <!-- Alterar Status -->

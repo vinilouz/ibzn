@@ -1,7 +1,6 @@
-import { pgTable, serial, text, integer, doublePrecision, timestamp, pgEnum, foreignKey } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, doublePrecision, pgEnum, foreignKey } from "drizzle-orm/pg-core";
 import { user } from "./user";
 import { courses } from "./courses";
-import { courseEnrollments } from "./courseEnrollments";
 
 // Status do pagamento
 export const paymentStatusEnum = pgEnum("payment_status", [
@@ -44,10 +43,10 @@ export const payments = pgTable("payments", {
     notes: text("notes"), // Observações
 
     // Datas
-    createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().notNull(),
-    paidAt: timestamp("paid_at", { mode: 'string' }), // Quando foi pago
-    cancelledAt: timestamp("cancelled_at", { mode: 'string' }), // Quando foi cancelado
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+    paidAt: text("paid_at"), // Quando foi pago
+    cancelledAt: text("cancelled_at"), // Quando foi cancelado
 }, (table) => [
     foreignKey({
         columns: [table.userId],
