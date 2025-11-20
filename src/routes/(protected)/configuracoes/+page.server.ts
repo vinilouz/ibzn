@@ -1,22 +1,32 @@
 import { fail, redirect, type Actions } from '@sveltejs/kit';
 import { auth } from '$lib/auth.server';
+import { db } from '$lib/server/db';
+import { systemSettings } from '$lib/server/db/schema';
+import { eq } from 'drizzle-orm';
 
 export const load = async (event: any) => {
 	const session = await auth.api.getSession({ headers: event.request.headers });
-	
+
 	if (!session) {
 		throw redirect(302, '/login');
 	}
 
+	const settings = await db
+		.select()
+		.from(systemSettings)
+		.where(eq(systemSettings.key, 'maintenance_mode'))
+		.limit(1);
+
 	return {
-		user: session.user
+		user: session.user,
+		maintenanceMode: settings.length > 0 && settings[0].value === 'true'
 	};
 };
 
 export const actions: Actions = {
 	updateProfile: async (event) => {
 		const session = await auth.api.getSession({ headers: event.request.headers });
-		
+
 		if (!session) {
 			return fail(401, { message: 'Não autorizado' });
 		}
@@ -46,7 +56,7 @@ export const actions: Actions = {
 
 	changePassword: async (event) => {
 		const session = await auth.api.getSession({ headers: event.request.headers });
-		
+
 		if (!session) {
 			return fail(401, { message: 'Não autorizado' });
 		}
@@ -85,9 +95,34 @@ export const actions: Actions = {
 		}
 	},
 
+	toggleMaintenance: async (event) => {
+		const session = await auth.api.getSession({ headers: event.request.headers });
+
+		if (!session || session.user.role !== 'admin') {
+			return fail(403, { message: 'Acesso negado' });
+		}
+
+		const formData = await event.request.formData();
+		const enabled = formData.get('enabled') === 'true';
+
+		try {
+			await db.insert(systemSettings)
+				.values({ key: 'maintenance_mode', value: String(enabled) })
+				.onConflictDoUpdate({
+					target: systemSettings.key,
+					set: { value: String(enabled) }
+				});
+
+			return { success: true, message: `Modo de manutenção ${enabled ? 'ativado' : 'desativado'}` };
+		} catch (error) {
+			console.error('Erro ao alterar modo de manutenção:', error);
+			return fail(500, { message: 'Erro ao alterar modo de manutenção' });
+		}
+	},
+
 	deleteAccount: async (event) => {
 		const session = await auth.api.getSession({ headers: event.request.headers });
-		
+
 		if (!session) {
 			return fail(401, { message: 'Não autorizado' });
 		}

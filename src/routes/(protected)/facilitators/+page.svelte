@@ -99,7 +99,7 @@
 
   <!-- Drawer -->
   <Sheet bind:open={drawerOpen}>
-    <SheetContent class="w-full sm:max-w-md overflow-y-auto">
+    <SheetContent side="center" class="w-full sm:max-w-md overflow-y-auto max-h-[90vh]">
       <SheetHeader>
         <SheetTitle>
           {isEditMode ? 'Detalhes do Facilitador' : 'Novo Facilitador'}
@@ -131,28 +131,28 @@
               <input type="hidden" name="id" value={selectedFacilitator.id} />
               
               <div>
-                <label for="edit-name" class="text-sm font-medium mb-2 block">Nome</label>
-                <Input id="edit-name" name="name" value={selectedFacilitator.name} required />
+                <label for="edit-name" class="text-sm font-bold mb-2 block text-center">Nome</label>
+                <Input id="edit-name" name="name" value={selectedFacilitator.name} required class="text-center border-none shadow-none opacity-50" />
               </div>
 
               <div>
-                <label for="edit-phone" class="text-sm font-medium mb-2 block">Telefone</label>
-                <Input id="edit-phone" name="phone" value={selectedFacilitator.phone} required />
+                <label for="edit-phone" class="text-sm font-bold mb-2 block text-center">Telefone</label>
+                <Input id="edit-phone" name="phone" value={selectedFacilitator.phone} required class="text-center border-none shadow-none opacity-50" />
               </div>
 
               <div>
-                <label for="edit-email" class="text-sm font-medium mb-2 block">Email</label>
-                <Input id="edit-email" name="email" type="email" value={selectedFacilitator.email || ''} />
+                <label for="edit-email" class="text-sm font-bold mb-2 block text-center">Email</label>
+                <Input id="edit-email" name="email" type="email" value={selectedFacilitator.email || ''} class="text-center border-none shadow-none opacity-50" />
               </div>
 
               <div>
-                <label for="edit-role" class="text-sm font-medium mb-2 block">Função</label>
-                <Input id="edit-role" name="role" value={selectedFacilitator.role || ''} />
+                <label for="edit-role" class="text-sm font-bold mb-2 block text-center">Função</label>
+                <Input id="edit-role" name="role" value={selectedFacilitator.role || ''} class="text-center border-none shadow-none opacity-50" />
               </div>
 
               <div>
-                <label for="edit-birthdate" class="text-sm font-medium mb-2 block">Data de Nascimento</label>
-                <Input id="edit-birthdate" name="birthdate" type="date" value={selectedFacilitator.birthdate || ''} />
+                <label for="edit-birthdate" class="text-sm font-bold mb-2 block text-center">Data de Nascimento</label>
+                <Input id="edit-birthdate" name="birthdate" type="date" value={selectedFacilitator.birthdate || ''} class="text-center border-none shadow-none opacity-50" />
               </div>
 
               <div class="flex gap-2 pt-4">
@@ -185,34 +185,36 @@
             class="space-y-4"
           >
             <div>
-              <label for="create-name" class="text-sm font-medium mb-2 block">Nome *</label>
-              <Input id="create-name" name="name" placeholder="Nome completo" required />
+              <label for="create-name" class="text-sm font-bold mb-2 block text-center">Nome *</label>
+              <Input id="create-name" name="name" placeholder="Nome completo" required class="text-center border-none shadow-none opacity-50" />
             </div>
 
             <div>
-              <label for="create-phone" class="text-sm font-medium mb-2 block">Telefone *</label>
-              <Input id="create-phone" name="phone" placeholder="(00) 00000-0000" required />
+              <label for="create-phone" class="text-sm font-bold mb-2 block text-center">Telefone *</label>
+              <Input id="create-phone" name="phone" placeholder="(00) 00000-0000" required class="text-center border-none shadow-none opacity-50" />
             </div>
 
             <div>
-              <label for="create-email" class="text-sm font-medium mb-2 block">Email</label>
-              <Input id="create-email" name="email" type="email" placeholder="email@exemplo.com" />
+              <label for="create-email" class="text-sm font-bold mb-2 block text-center">Email</label>
+              <Input id="create-email" name="email" type="email" placeholder="email@exemplo.com" class="text-center border-none shadow-none opacity-50" />
             </div>
 
             <div>
-              <label for="create-role" class="text-sm font-medium mb-2 block">Função</label>
-              <Input id="create-role" name="role" placeholder="Cargo ou função" />
+              <label for="create-role" class="text-sm font-bold mb-2 block text-center">Função</label>
+              <Input id="create-role" name="role" placeholder="Cargo ou função" class="text-center border-none shadow-none opacity-50" />
             </div>
 
             <div>
-              <label for="create-birthdate" class="text-sm font-medium mb-2 block">Data de Nascimento</label>
-              <Input id="create-birthdate" name="birthdate" type="date" />
+              <label for="create-birthdate" class="text-sm font-bold mb-2 block text-center">Data de Nascimento</label>
+              <Input id="create-birthdate" name="birthdate" type="date" class="text-center border-none shadow-none opacity-50" />
             </div>
 
-            <Button type="submit" class="w-full">
-              <Plus class="w-4 h-4 mr-2" />
-              Criar Facilitador
-            </Button>
+            <div class="flex justify-center pt-4">
+              <Button type="submit" class="w-full md:w-1/2">
+                <Plus class="w-4 h-4 mr-2" />
+                Criar Facilitador
+              </Button>
+            </div>
           </form>
         {/if}
       </div>

@@ -266,7 +266,7 @@
 
   <!-- Drawer -->
   <Sheet bind:open={drawerOpen}>
-    <SheetContent class="w-full sm:max-w-4xl overflow-y-auto">
+    <SheetContent side="center" class="w-full sm:max-w-4xl overflow-y-auto max-h-[90vh]">
       <SheetHeader>
         <SheetTitle>Novo Agendamento</SheetTitle>
       </SheetHeader>
@@ -279,59 +279,46 @@
           class="space-y-6"
         >
 
-          <div class="flex flex-col lg:flex-row gap-6">
-            <!-- Lado Esquerdo: Seleção de Data -->
-            <div class="lg:w-1/2">
-              <label for="dateInput" class="text-sm font-medium mb-2 block">Data da Visita *</label>
-
-              <!-- Input date -->
-              <Input
-                id="dateInput"
-                type="date"
-                bind:value={selectedDateString}
-                name="date"
-                required
-              />
-
-              <!-- TODO: Adicionar calendário visual quando o tipo estiver correto -->
-              <!-- Calendário visual comentado temporariamente
-              <div class="border rounded-md p-2 mt-4">
-                <Calendar
-                  bind:value={selectedDate}
-                  locale="pt-BR"
+          <div class="grid gap-4 py-4">
+            <!-- Data e Horários -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label for="dateInput" class="text-sm font-bold mb-2 block text-center">Data da Visita *</label>
+                <Input
+                  id="dateInput"
+                  type="date"
+                  bind:value={selectedDateString}
+                  name="date"
+                  class="text-center opacity-50"
+                  required
                 />
               </div>
-              -->
-            </div>
-
-            <!-- Lado Direito: Formulário -->
-            <div class="lg:w-1/2 space-y-4">
-              <!-- Horário de Início -->
               <div>
-                <label for="startTime" class="text-sm font-medium mb-2 block">Horário de Início *</label>
+                <label for="startTime" class="text-sm font-bold mb-2 block text-center">Horário de Início *</label>
                 <Input
                   id="startTime"
                   name="startTime"
                   type="time"
                   bind:value={startTime}
+                  class="text-center opacity-50"
                   required
                 />
               </div>
-
-              <!-- Horário de Finalização -->
               <div>
-                <label for="endTime" class="text-sm font-medium mb-2 block">Horário de Finalização</label>
+                <label for="endTime" class="text-sm font-bold mb-2 block text-center">Horário de Finalização</label>
                 <Input
                   id="endTime"
                   name="endTime"
                   type="time"
+                  class="text-center opacity-50"
                   bind:value={endTime}
                 />
               </div>
+            </div>
 
-              <!-- Nome e Checkbox de Usuário Cadastrado -->
-              <div>
-                <label for="name" class="text-sm font-medium mb-2 block">Nome *</label>
+            <!-- Nome -->
+            <div>
+                <label for="name" class="text-sm font-bold mb-2 block text-center">Nome *</label>
                 <div class="flex gap-2 items-start">
                   <div class="flex-1 relative">
                     <Input
@@ -343,6 +330,7 @@
                         const target = e.target as HTMLInputElement;
                         handleNameInput(target.value);
                       }}
+                      class="text-center opacity-50"
                       required
                     />
                     <!-- Dropdown de Participantes -->
@@ -368,53 +356,57 @@
                 </div>
                 <input type="hidden" name="isSignedUp" value={String(isSignedUp)} />
                 <input type="hidden" name="participantId" value={selectedParticipantId || ''} />
-              </div>
+            </div>
 
-              <!-- Email (apenas se não for usuário cadastrado) -->
-              {#if !isSignedUp}
+            <!-- Email e Telefone -->
+            {#if !isSignedUp}
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label for="email" class="text-sm font-medium mb-2 block">Email</label>
+                  <label for="email" class="text-sm font-bold mb-2 block text-center">Email</label>
                   <Input
                     id="email"
                     name="email"
                     type="email"
                     bind:value={email}
                     placeholder="email@exemplo.com"
+                    class="text-center opacity-50"
                   />
                 </div>
-
-                <!-- Telefone (apenas se não for usuário cadastrado) -->
                 <div>
-                  <label for="phone" class="text-sm font-medium mb-2 block">Telefone</label>
+                  <label for="phone" class="text-sm font-bold mb-2 block text-center">Telefone</label>
                   <Input
                     id="phone"
                     name="phone"
                     type="tel"
                     bind:value={phone}
                     placeholder="(00) 00000-0000"
+                    class="text-center opacity-50"
                   />
                 </div>
-              {/if}
+              </div>
+            {/if}
 
-              <!-- Motivo -->
-              <div>
-                <label for="reason" class="text-sm font-medium mb-2 block">Motivo da Visita</label>
+            <!-- Motivo -->
+            <div>
+                <label for="reason" class="text-sm font-bold mb-2 block text-center">Motivo da Visita</label>
                 <Input
                   id="reason"
                   name="reason"
                   bind:value={reason}
                   placeholder="Descreva o motivo da visita"
+                  class="text-center opacity-50"
                 />
-              </div>
+            </div>
 
-              <!-- Dropdown de Facilitador -->
+            <!-- Facilitador e Sala -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label for="facilitatorId" class="text-sm font-medium mb-2 block">Facilitador</label>
+                <label for="facilitatorId" class="text-sm font-bold mb-2 block text-center">Facilitador</label>
                 <select
                   id="facilitatorId"
                   name="facilitatorId"
                   bind:value={selectedFacilitatorId}
-                  class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-center opacity-50"
                 >
                   <option value="">Selecione um facilitador</option>
                   {#each data.facilitators as facilitator}
@@ -422,15 +414,13 @@
                   {/each}
                 </select>
               </div>
-
-              <!-- Dropdown de Sala -->
               <div>
-                <label for="roomId" class="text-sm font-medium mb-2 block">Sala</label>
+                <label for="roomId" class="text-sm font-bold mb-2 block text-center">Sala</label>
                 <select
                   id="roomId"
                   name="roomId"
                   bind:value={selectedRoomId}
-                  class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-center opacity-50"
                 >
                   <option value="">Selecione uma sala</option>
                   {#each data.rooms as room}
@@ -438,14 +428,14 @@
                   {/each}
                 </select>
               </div>
+            </div>
 
-              <!-- Botões de Ação -->
-              <div class="flex gap-2 pt-4">
-                <Button type="submit" class="flex-1">
-                  <Plus class="w-4 h-4 mr-2" />
-                  Criar Agendamento
-                </Button>
-              </div>
+            <!-- Botões de Ação -->
+            <div class="flex gap-2 pt-4 justify-center">
+              <Button type="submit" class="w-full md:w-1/2">
+                <Plus class="w-4 h-4 mr-2" />
+                Criar Agendamento
+              </Button>
             </div>
           </div>
         </form>

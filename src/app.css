@@ -178,7 +178,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-img, video {
+img,
+video {
   max-width: 100%;
   height: auto;
 }
@@ -187,7 +188,25 @@ img, video {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Force text centering for date and time inputs */
+input[type="date"],
+input[type="time"] {
+  text-align: center !important;
+  justify-content: center !important;
+  display: flex !important;
+  /* Ensure flex behavior for alignment */
+}
+
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value {
+  text-align: center !important;
+  display: inline-block !important;
+  width: 100% !important;
+  /* Ensure it takes full width to center text */
 }

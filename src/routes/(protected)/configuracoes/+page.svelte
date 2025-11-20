@@ -7,7 +7,7 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import { Badge } from '$lib/components/ui/badge';
 	import { enhanceWithLoadingAndCallback } from '$lib/utils/enhance';
-	import { User, Lock, Trash2, Mail, Shield, Palette } from 'lucide-svelte';
+	import { User, Lock, Trash2, Mail, Shield, Palette, AlertTriangle } from 'lucide-svelte';
 
 	let { data } = $props();
 
@@ -175,6 +175,45 @@
 			</div>
 		</CardContent>
 	</Card>
+
+	<!-- Manutenção do Sistema (Admin Only) -->
+	{#if data.user?.role === 'admin'}
+	<Card class="mb-6 border-orange-200">
+		<CardHeader>
+			<div class="flex items-center gap-3">
+				<div class="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
+					<AlertTriangle class="h-6 w-6 text-orange-600" />
+				</div>
+				<div>
+					<CardTitle class="text-orange-700">Manutenção do Sistema</CardTitle>
+					<CardDescription>Gerencie o acesso ao sistema</CardDescription>
+				</div>
+			</div>
+		</CardHeader>
+		<CardContent>
+			<div class="rounded-lg bg-orange-50 border border-orange-200 p-4 mb-4">
+				<p class="text-sm text-orange-800 mb-2">
+					Quando o modo de manutenção estiver ativo, apenas administradores poderão acessar o sistema.
+					Todos os outros usuários serão redirecionados para uma página de aviso.
+				</p>
+				<p class="text-sm font-bold {data.maintenanceMode ? 'text-red-600' : 'text-green-600'}">
+					Status atual: {data.maintenanceMode ? 'EM MANUTENÇÃO' : 'OPERACIONAL'}
+				</p>
+			</div>
+
+			<form method="POST" action="?/toggleMaintenance" use:enhance={enhanceWithLoadingAndCallback(() => {})}>
+				<input type="hidden" name="enabled" value={(!data.maintenanceMode).toString()} />
+				<Button 
+					type="submit" 
+					variant={data.maintenanceMode ? "outline" : "destructive"}
+					class="w-full sm:w-auto"
+				>
+					{data.maintenanceMode ? 'Desativar Modo Manutenção' : 'Ativar Modo Manutenção'}
+				</Button>
+			</form>
+		</CardContent>
+	</Card>
+	{/if}
 
 	<!-- Zona de Perigo -->
 	<Card class="border-red-200">

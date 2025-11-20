@@ -175,7 +175,7 @@
 
   <!-- Drawer -->
   <Sheet bind:open={drawerOpen}>
-    <SheetContent class="w-full sm:max-w-md overflow-y-auto">
+    <SheetContent side="center" class="w-full sm:max-w-md overflow-y-auto max-h-[90vh]">
       <SheetHeader>
         <SheetTitle>
           {isEditMode ? 'Gerenciar Pagamento' : 'Registrar Pagamento'}
@@ -215,11 +215,11 @@
               <input type="hidden" name="id" value={selectedPayment.payment.id} />
 
               <div>
-                <label for="status" class="text-sm font-medium mb-2 block">Alterar Status</label>
+                <label for="status" class="text-sm font-bold mb-2 block text-center">Alterar Status</label>
                 <select
                   id="status"
                   name="status"
-                  class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-center opacity-50"
                   required
                 >
                   <option value="pending" selected={selectedPayment.payment.status === 'pending'}>Pendente</option>
@@ -269,11 +269,11 @@
             class="space-y-4"
           >
             <div>
-              <label for="participantId" class="text-sm font-medium mb-2 block">Participante *</label>
+              <label for="participantId" class="text-sm font-bold mb-2 block text-center">Participante *</label>
               <select
                 id="participantId"
                 name="participantId"
-                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-center opacity-50"
                 required
               >
                 <option value="">Selecione um participante</option>
@@ -289,11 +289,11 @@
             </div>
 
             <div>
-              <label for="courseId" class="text-sm font-medium mb-2 block">Curso *</label>
+              <label for="courseId" class="text-sm font-bold mb-2 block text-center">Curso *</label>
               <select
                 id="courseId"
                 name="courseId"
-                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-center opacity-50"
                 required
               >
                 <option value="">Selecione um curso</option>
@@ -304,21 +304,21 @@
             </div>
 
             <div>
-              <label for="amount" class="text-sm font-medium mb-2 block">Valor *</label>
-              <Input id="amount" name="amount" type="number" step="0.01" placeholder="0.00" required />
+              <label for="amount" class="text-sm font-bold mb-2 block text-center">Valor *</label>
+              <Input id="amount" name="amount" type="number" step="0.01" placeholder="0.00" required class="text-center opacity-50" />
             </div>
 
             <div>
-              <label for="discount" class="text-sm font-medium mb-2 block">Desconto</label>
-              <Input id="discount" name="discount" type="number" step="0.01" placeholder="0.00" />
+              <label for="discount" class="text-sm font-bold mb-2 block text-center">Desconto</label>
+              <Input id="discount" name="discount" type="number" step="0.01" placeholder="0.00" class="text-center opacity-50" />
             </div>
 
             <div>
-              <label for="paymentMethod" class="text-sm font-medium mb-2 block">Método de Pagamento</label>
+              <label for="paymentMethod" class="text-sm font-bold mb-2 block text-center">Método de Pagamento</label>
               <select
                 id="paymentMethod"
                 name="paymentMethod"
-                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-center opacity-50"
               >
                 <option value="">Selecione</option>
                 <option value="pix">PIX</option>
@@ -331,20 +331,22 @@
             </div>
 
             <div>
-              <label for="notes" class="text-sm font-medium mb-2 block">Observações</label>
+              <label for="notes" class="text-sm font-bold mb-2 block text-center">Observações</label>
               <textarea
                 id="notes"
                 name="notes"
                 rows="3"
-                class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-center opacity-50"
                 placeholder="Informações adicionais sobre o pagamento"
               ></textarea>
             </div>
 
-            <Button type="submit" class="w-full">
-              <Plus class="w-4 h-4 mr-2" />
-              Registrar Pagamento
-            </Button>
+            <div class="flex justify-center pt-4">
+              <Button type="submit" class="w-full md:w-1/2">
+                <Plus class="w-4 h-4 mr-2" />
+                Registrar Pagamento
+              </Button>
+            </div>
           </form>
         {/if}
       </div>
