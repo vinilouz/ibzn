@@ -12,4 +12,5 @@ export * from './schema/facilitators';
 export * from './schema/participants';
 export * from './schema/appointments';
 export * from './schema/settings';
+export * from './schema/events';
 

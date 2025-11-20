@@ -2,8 +2,8 @@ import { pgTable, text, timestamp, foreignKey, integer, unique, date, doublePrec
 import { sql } from "drizzle-orm"
 
 export const attendanceStatus = pgEnum("attendance_status", ['present', 'absent', 'late', 'excused'])
-export const enrollmentStatus = pgEnum("enrollment_status", ['active', 'cancelled', 'completed', 'pending'])
-export const paymentMethod = pgEnum("payment_method", ['pix', 'credit_card', 'debit_card', 'bank_transfer', 'boleto', 'cash'])
+export const enrollmentStatus = pgEnum("enrollment_status", ['active', 'completed', 'cancelled', 'dropped', 'pending'])
+export const paymentMethod = pgEnum("payment_method", ['pix', 'credit_card', 'debit_card', 'bank_transfer', 'boleto', 'cash', 'free'])
 export const paymentStatus = pgEnum("payment_status", ['pending', 'paid', 'cancelled', 'refunded'])
 export const role = pgEnum("role", ['admin', 'manager', 'user', 'guest'])
 export const weekday = pgEnum("weekday", ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'])
@@ -224,6 +224,15 @@ export const payments = pgTable("payments", {
 		}).onDelete("cascade"),
 ]);
 
+export const events = pgTable("events", {
+	id: integer().primaryKey().generatedAlwaysAsIdentity({ name: "events_id_seq", startWith: 1, increment: 1, minValue: 1, maxValue: 2147483647, cache: 1 }),
+	nome: text().notNull(),
+	descricao: text(),
+	start: timestamp({ withTimezone: true, mode: 'string' }).notNull(),
+	end: timestamp({ withTimezone: true, mode: 'string' }),
+	createdAt: timestamp({ withTimezone: true, mode: 'string' }).notNull(),
+});
+
 export const appointments = pgTable("appointments", {
 	id: integer().primaryKey().generatedAlwaysAsIdentity({ name: "appointments_id_seq", startWith: 1, increment: 1, minValue: 1, maxValue: 2147483647, cache: 1 }),
 	name: text().notNull(),
@@ -256,6 +265,11 @@ export const appointments = pgTable("appointments", {
 		}),
 ]);
 
+export const systemSettings = pgTable("system_settings", {
+	key: text().primaryKey().notNull(),
+	value: text().notNull(),
+});
+
 export const rooms = pgTable("rooms", {
 	id: serial().primaryKey().notNull(),
 	name: varchar({ length: 255 }).notNull(),
@@ -265,4 +279,11 @@ export const rooms = pgTable("rooms", {
 	capacity: integer(),
 	status: boolean().default(true),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
-});
+	facilitatorId: integer("facilitator_id"),
+}, (table) => [
+	foreignKey({
+			columns: [table.facilitatorId],
+			foreignColumns: [facilitators.id],
+			name: "rooms_facilitator_id_facilitators_id_fk"
+		}),
+]);

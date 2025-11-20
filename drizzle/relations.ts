@@ -77,14 +77,19 @@ export const courseEnrollmentsRelations = relations(courseEnrollments, ({one}) =
 	}),
 }));
 
-export const roomsRelations = relations(rooms, ({many}) => ({
+export const roomsRelations = relations(rooms, ({one, many}) => ({
 	courses: many(courses),
 	appointments: many(appointments),
+	facilitator: one(facilitators, {
+		fields: [rooms.facilitatorId],
+		references: [facilitators.id]
+	}),
 }));
 
 export const facilitatorsRelations = relations(facilitators, ({many}) => ({
 	courses: many(courses),
 	appointments: many(appointments),
+	rooms: many(rooms),
 }));
 
 export const paymentsRelations = relations(payments, ({one}) => ({
