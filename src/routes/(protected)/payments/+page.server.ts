@@ -47,29 +47,63 @@ export const actions: Actions = {
     const participantId = Number(data.get('participantId'));
     const courseId = Number(data.get('courseId'));
     const amount = Number(data.get('amount'));
-    const discount = Number(data.get('discount') || 0);
+    const discountPercentage = Number(data.get('discountPercentage') || 0);
+    
+    // Calculate discount amount based on percentage
+    const discount = (amount * discountPercentage) / 100;
     const finalAmount = amount - discount;
+    
     const paymentMethodRaw = data.get('paymentMethod') as string;
     const notes = data.get('notes') as string | null;
 
     // Validar paymentMethod
-    const validMethods = ['pix', 'credit_card', 'debit_card', 'bank_transfer', 'boleto', 'cash'];
+    const validMethods = ['pix', 'credit_card', 'debit_card', 'bank_transfer', 'boleto', 'cash', 'free'];
     const paymentMethod = paymentMethodRaw && validMethods.includes(paymentMethodRaw)
-      ? paymentMethodRaw as 'pix' | 'credit_card' | 'debit_card' | 'bank_transfer' | 'boleto' | 'cash'
+      ? paymentMethodRaw as 'pix' | 'credit_card' | 'debit_card' | 'bank_transfer' | 'boleto' | 'cash' | 'free'
       : null;
 
-    await db.insert(payments).values({
+    // If payment method is 'free', status is automatically 'paid'
+    const status = paymentMethod === 'free' ? 'paid' : 'pending';
+    const paidAt = paymentMethod === 'free' ? new Date().toISOString() : null;
+
+    const [newPayment] = await db.insert(payments).values({
       participantId,
       courseId,
       amount,
       discount,
       finalAmount,
-      status: 'pending',
+      status,
       paymentMethod,
       notes: notes || null,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    });
+      updatedAt: new Date().toISOString(),
+      paidAt
+    }).returning();
+
+    // If free (paid), automatically enroll
+    if (status === 'paid') {
+       const existingEnrollment = await db
+        .select()
+        .from(courseEnrollments)
+        .where(
+          and(
+            eq(courseEnrollments.participantId, participantId),
+            eq(courseEnrollments.courseId, courseId)
+          )
+        )
+        .limit(1);
+
+      if (existingEnrollment.length === 0) {
+        await db.insert(courseEnrollments).values({
+          participantId,
+          courseId,
+          amount: finalAmount || 0,
+          enrolledAt: new Date().toISOString(),
+          status: 'active',
+          notes: `Matrícula criada automaticamente pelo pagamento #${newPayment.id} (Gratuito)`
+        });
+      }
+    }
 
     return { success: true };
   },

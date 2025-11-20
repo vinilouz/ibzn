@@ -1,7 +1,7 @@
 import type { Actions } from './$types';
 import { db } from '$lib/server/db';
 import { appointments, participants, facilitators, rooms } from '$lib/server/db/schema';
-import { eq, ilike } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 export const load = async () => {
   const allAppointments = await db

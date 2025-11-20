@@ -32,7 +32,7 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
-    sendResetPassword: async ({ user, url, token }, request) => {
+    sendResetPassword: async ({ user, url }) => {
       try {
         const { data, error } = await resend.emails.send({
           from: 'Seu App <onboarding@resend.dev>', //tem que trocar esse email dps la no resend quando tiver o dominio

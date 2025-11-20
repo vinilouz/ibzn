@@ -17,7 +17,8 @@
 		TableHeader,
 		TableRow
 	} from '$lib/components/ui/table';
-	import { X, Upload, Plus } from 'lucide-svelte';
+	import { X, Upload, Plus, Eye } from 'lucide-svelte';
+	import * as Select from '$lib/components/ui/select';
 
 	interface RoomFormData {
 		name: string;
@@ -26,6 +27,7 @@
 		description: string;
 		imageUrl: string;
 		status: boolean;
+		facilitatorId: string;
 	}
 
 	let { data }: { data: PageData } = $props();
@@ -33,36 +35,43 @@
 	let editingRoom = $state<number | null>(null);
 	let localPreview = $state<string | null>(null);
 	let uploadingImage = $state(false);
-	
+
 	const initialFormData: RoomFormData = {
 		name: '',
 		capacity: '',
 		number: '',
 		description: '',
 		imageUrl: '',
-		status: true
+		status: true,
+		facilitatorId: ''
 	};
-	
+
 	let formData = $state<RoomFormData>({ ...initialFormData });
 
 	const activeView = $derived.by(() => {
+		const view = $page.url.searchParams.get('view');
+		return view === 'create' || view === 'edit' ? 'form' : 'list';
+	});
+
+	$effect(() => {
 		const view = $page.url.searchParams.get('view');
 		const id = $page.url.searchParams.get('id');
 
 		if (view === 'edit' && id) {
 			loadRoomForEdit(parseInt(id));
-			return 'form';
+		} else if (view === 'create') {
+			resetForm();
 		}
-
-		return view === 'create' ? 'form' : 'list';
-	}) as 'list' | 'form';
+	});
 
 	const imagePreview = $derived(localPreview || formData.imageUrl || null);
 	const isEditing = $derived(editingRoom !== null);
 
 	function loadRoomForEdit(roomId: number) {
+		if (editingRoom === roomId) return;
+
 		const room = data.rooms?.find((r) => r.id === roomId);
-		if (room && editingRoom !== roomId) {
+		if (room) {
 			editingRoom = roomId;
 			formData = {
 				name: room.name || '',
@@ -70,7 +79,8 @@
 				number: room.number?.toString() || '',
 				description: room.description || '',
 				imageUrl: room.imageUrl || '',
-				status: room.status ?? true
+				status: room.status ?? true,
+				facilitatorId: room.facilitatorId?.toString() || ''
 			};
 			localPreview = null;
 		}
@@ -84,13 +94,15 @@
 			number: room.number?.toString() || '',
 			description: room.description || '',
 			imageUrl: room.imageUrl || '',
-			status: room.status ?? true
+			status: room.status ?? true,
+			facilitatorId: room.facilitatorId?.toString() || ''
 		};
 		localPreview = null;
 		goto(`/salas?view=edit&id=${room.id}`);
 	}
 
 	function resetForm() {
+		if (editingRoom === null && formData.name === '') return;
 		editingRoom = null;
 		formData = { ...initialFormData };
 		localPreview = null;
@@ -232,6 +244,9 @@
 										<TableCell>{formatDate(room.createdAt)}</TableCell>
 										<TableCell class="text-right">
 											<div class="flex justify-end gap-2">
+												<Button variant="ghost" size="sm" onclick={() => goto(`/salas/${room.id}`)}>
+													<Eye class="h-4 w-4" />
+												</Button>
 												<Button
 													type="button"
 													variant="outline"
@@ -321,6 +336,25 @@
 						</div>
 
 						<div class="space-y-2">
+							<Label for="facilitatorId">Facilitador Responsável</Label>
+							<Select.Root type="single" bind:value={formData.facilitatorId}>
+								<Select.Trigger>
+									{data.facilitators?.find((f) => f.id.toString() === formData.facilitatorId)
+										?.name || 'Selecione um facilitador'}
+								</Select.Trigger>
+								<Select.Content>
+									{#if data.facilitators}
+										{#each data.facilitators as facilitator}
+											<Select.Item value={facilitator.id.toString()}>{facilitator.name}</Select.Item
+											>
+										{/each}
+									{/if}
+								</Select.Content>
+							</Select.Root>
+							<input type="hidden" name="facilitatorId" value={formData.facilitatorId} />
+						</div>
+
+						<div class="space-y-2">
 							<Label for="status" class="flex items-center justify-between">
 								<span>Status da Sala</span>
 								<Switch id="status" name="status" bind:checked={formData.status} />
@@ -344,21 +378,19 @@
 
 					<div class="space-y-4">
 						<Label>Imagem da Sala</Label>
-						
+
 						{#if uploadingImage}
 							<div class="rounded-lg border-2 border-dashed p-8">
 								<div class="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-									<div class="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+									<div
+										class="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent"
+									></div>
 									<span class="font-medium">Fazendo upload da imagem...</span>
 								</div>
 							</div>
 						{:else if imagePreview}
 							<div class="relative h-64 w-full overflow-hidden rounded-lg border">
-								<img
-									src={imagePreview}
-									alt="Preview"
-									class="h-full w-full object-cover"
-								/>
+								<img src={imagePreview} alt="Preview" class="h-full w-full object-cover" />
 								<Button
 									type="button"
 									variant="destructive"
@@ -384,12 +416,8 @@
 								</div>
 							</label>
 						{/if}
-						
-						<input
-							type="hidden"
-							name="imageUrl"
-							value={formData.imageUrl}
-						/>
+
+						<input type="hidden" name="imageUrl" value={formData.imageUrl} />
 						<input
 							type="file"
 							id="imageFile"
@@ -403,9 +431,7 @@
 						<Button type="submit">
 							{isEditing ? 'Atualizar Sala' : 'Criar Sala'}
 						</Button>
-						<Button type="button" variant="outline" onclick={cancelEdit}>
-							Cancelar
-						</Button>
+						<Button type="button" variant="outline" onclick={cancelEdit}>Cancelar</Button>
 					</div>
 				</form>
 			</CardContent>

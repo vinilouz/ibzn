@@ -1,4 +1,5 @@
 import { pgTable, integer, timestamp, boolean, text, varchar, serial } from 'drizzle-orm/pg-core';
+import { facilitators } from './facilitators';
 
 export const rooms = pgTable('rooms', {
 	id: serial('id').primaryKey(),
@@ -8,5 +9,6 @@ export const rooms = pgTable('rooms', {
 	imageUrl: varchar('image_url', { length: 500 }),
 	capacity: integer('capacity'),
 	status: boolean('status').default(true),
-	createdAt: timestamp('created_at').defaultNow()
+	createdAt: timestamp('created_at').defaultNow(),
+	facilitatorId: integer('facilitator_id').references(() => facilitators.id)
 });

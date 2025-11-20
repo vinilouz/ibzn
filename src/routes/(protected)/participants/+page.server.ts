@@ -1,11 +1,28 @@
 // src/routes/participants/+page.server.ts
-import type { Actions } from './$types';
+import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { participants, courseEnrollments, courses } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, ilike, or, sql } from 'drizzle-orm';
 
-export const load = async () => {
-  const allParticipants = await db.select().from(participants);
+export const load: PageServerLoad = async ({ url }) => {
+  const page = Number(url.searchParams.get('page')) || 1;
+  const search = url.searchParams.get('search') || '';
+  const limit = 10;
+  const offset = (page - 1) * limit;
+
+  let query = db.select().from(participants);
+  
+  if (search) {
+    query = query.where(
+      or(
+        ilike(participants.name, `%${search}%`),
+        ilike(participants.phone, `%${search}%`),
+        ilike(participants.address, `%${search}%`)
+      )
+    ) as any;
+  }
+
+  const allParticipants = await query.limit(limit).offset(offset);
 
   const allCourses = await db.select().from(courses);
 
@@ -27,9 +44,30 @@ export const load = async () => {
     courses: enrollments.filter(e => e.participantId === participant.id)
   }));
 
+  // Get total count for pagination
+  const countQuery = search
+    ? db.select({ count: sql<number>`count(*)` }).from(participants).where(
+        or(
+          ilike(participants.name, `%${search}%`),
+          ilike(participants.phone, `%${search}%`),
+          ilike(participants.address, `%${search}%`)
+        )
+      )
+    : db.select({ count: sql<number>`count(*)` }).from(participants);
+  
+  const [{ count }] = await countQuery as any;
+  const totalPages = Math.ceil(Number(count) / limit);
+
   return {
     participants: participantsWithCourses,
-    courses: allCourses
+    courses: allCourses,
+    pagination: {
+      currentPage: page,
+      totalPages,
+      totalItems: Number(count),
+      itemsPerPage: limit
+    },
+    search
   };
 };
 

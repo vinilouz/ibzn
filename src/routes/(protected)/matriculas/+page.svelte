@@ -29,7 +29,7 @@
 
 	let editingEnrollment = $state<number | null>(null);
 	let statusFilter = $state<string>('all');
-	
+
 	const initialFormData: EnrollmentFormData = {
 		participantId: '',
 		courseId: '',
@@ -37,8 +37,19 @@
 		status: 'active',
 		notes: ''
 	};
-	
+
 	let formData = $state<EnrollmentFormData>({ ...initialFormData });
+
+	$effect(() => {
+		if (formData.courseId) {
+			const course = data.courses?.find(
+				(c: any) => c.id.toString() === formData.courseId.toString()
+			);
+			if (course) {
+				formData.amount = course.price?.toString() || '0';
+			}
+		}
+	});
 
 	const filteredEnrollments = $derived.by(() => {
 		if (statusFilter === 'all') return data.enrollments || [];
@@ -164,7 +175,12 @@
 
 	{#if activeView === 'list'}
 		<div class="mb-6 grid gap-4 md:grid-cols-5">
-			<Card class="cursor-pointer transition-all hover:shadow-md {statusFilter === 'all' ? 'ring-2 ring-primary' : ''}" onclick={() => statusFilter = 'all'}>
+			<Card
+				class="cursor-pointer transition-all hover:shadow-md {statusFilter === 'all'
+					? 'ring-2 ring-primary'
+					: ''}"
+				onclick={() => (statusFilter = 'all')}
+			>
 				<CardContent class="pt-6">
 					<div class="text-center">
 						<p class="text-2xl font-bold">{stats.total}</p>
@@ -173,7 +189,12 @@
 				</CardContent>
 			</Card>
 
-			<Card class="cursor-pointer transition-all hover:shadow-md {statusFilter === 'active' ? 'ring-2 ring-green-500' : ''}" onclick={() => statusFilter = 'active'}>
+			<Card
+				class="cursor-pointer transition-all hover:shadow-md {statusFilter === 'active'
+					? 'ring-2 ring-green-500'
+					: ''}"
+				onclick={() => (statusFilter = 'active')}
+			>
 				<CardContent class="pt-6">
 					<div class="text-center">
 						<p class="text-2xl font-bold text-green-600">{stats.active}</p>
@@ -182,7 +203,12 @@
 				</CardContent>
 			</Card>
 
-			<Card class="cursor-pointer transition-all hover:shadow-md {statusFilter === 'pending' ? 'ring-2 ring-yellow-500' : ''}" onclick={() => statusFilter = 'pending'}>
+			<Card
+				class="cursor-pointer transition-all hover:shadow-md {statusFilter === 'pending'
+					? 'ring-2 ring-yellow-500'
+					: ''}"
+				onclick={() => (statusFilter = 'pending')}
+			>
 				<CardContent class="pt-6">
 					<div class="text-center">
 						<p class="text-2xl font-bold text-yellow-600">{stats.pending}</p>
@@ -191,7 +217,12 @@
 				</CardContent>
 			</Card>
 
-			<Card class="cursor-pointer transition-all hover:shadow-md {statusFilter === 'completed' ? 'ring-2 ring-blue-500' : ''}" onclick={() => statusFilter = 'completed'}>
+			<Card
+				class="cursor-pointer transition-all hover:shadow-md {statusFilter === 'completed'
+					? 'ring-2 ring-blue-500'
+					: ''}"
+				onclick={() => (statusFilter = 'completed')}
+			>
 				<CardContent class="pt-6">
 					<div class="text-center">
 						<p class="text-2xl font-bold text-blue-600">{stats.completed}</p>
@@ -200,7 +231,12 @@
 				</CardContent>
 			</Card>
 
-			<Card class="cursor-pointer transition-all hover:shadow-md {statusFilter === 'cancelled' ? 'ring-2 ring-red-500' : ''}" onclick={() => statusFilter = 'cancelled'}>
+			<Card
+				class="cursor-pointer transition-all hover:shadow-md {statusFilter === 'cancelled'
+					? 'ring-2 ring-red-500'
+					: ''}"
+				onclick={() => (statusFilter = 'cancelled')}
+			>
 				<CardContent class="pt-6">
 					<div class="text-center">
 						<p class="text-2xl font-bold text-red-600">{stats.cancelled}</p>
@@ -213,7 +249,7 @@
 		<Card>
 			<CardHeader>
 				<CardTitle>
-					Matrículas 
+					Matrículas
 					{#if statusFilter === 'all'}
 						({stats.total})
 					{:else if statusFilter === 'active'}
@@ -247,12 +283,16 @@
 									<TableCell>
 										<div>
 											<p class="font-medium">{enrollment.participantName || '-'}</p>
-											<p class="text-sm text-muted-foreground">{enrollment.participantPhone || '-'}</p>
+											<p class="text-sm text-muted-foreground">
+												{enrollment.participantPhone || '-'}
+											</p>
 										</div>
 									</TableCell>
 									<TableCell>{enrollment.courseName || '-'}</TableCell>
 									<TableCell>
-										<span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold {badge.class}">
+										<span
+											class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold {badge.class}"
+										>
 											{badge.label}
 										</span>
 									</TableCell>
@@ -260,19 +300,11 @@
 									<TableCell>{formatDate(enrollment.enrolledAt)}</TableCell>
 									<TableCell>
 										<div class="flex items-center gap-2">
-											<Button
-												variant="outline"
-												size="sm"
-												onclick={() => startEdit(enrollment)}
-											>
+											<Button variant="outline" size="sm" onclick={() => startEdit(enrollment)}>
 												Editar
 											</Button>
-											
-											<form
-												method="POST"
-												action="?/delete"
-												use:enhance={handleDelete()}
-											>
+
+											<form method="POST" action="?/delete" use:enhance={handleDelete()}>
 												<input type="hidden" name="id" value={enrollment.id} />
 												<Button type="submit" variant="ghost" size="sm">
 													<X class="h-4 w-4" />
@@ -312,7 +344,7 @@
 								bind:value={formData.participantId}
 								required
 								disabled={isEditing}
-								class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+								class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								<option value="">Selecione um participante</option>
 								{#each data.participants || [] as participant}
@@ -329,7 +361,7 @@
 								bind:value={formData.courseId}
 								required
 								disabled={isEditing}
-								class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+								class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								<option value="">Selecione um curso</option>
 								{#each data.courses || [] as course}
@@ -350,6 +382,8 @@
 								bind:value={formData.amount}
 								placeholder="0.00"
 								required
+								readonly
+								class="bg-muted"
 							/>
 						</div>
 
@@ -361,7 +395,7 @@
 									name="status"
 									bind:value={formData.status}
 									required
-									class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+									class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 								>
 									<option value="active">Ativa</option>
 									<option value="pending">Pendente</option>
@@ -387,9 +421,7 @@
 						<Button type="submit">
 							{isEditing ? 'Atualizar' : 'Criar'} Matrícula
 						</Button>
-						<Button type="button" variant="outline" onclick={cancelEdit}>
-							Cancelar
-						</Button>
+						<Button type="button" variant="outline" onclick={cancelEdit}>Cancelar</Button>
 					</div>
 				</form>
 			</CardContent>

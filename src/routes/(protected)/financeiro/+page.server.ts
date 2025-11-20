@@ -40,8 +40,8 @@ export const load: PageServerLoad = async () => {
       stats.totalReembolsado += amount;
     }
 
-    // Contar como gratuito se finalAmount = 0
-    if (amount === 0) {
+    // Contar como gratuito se finalAmount = 0 ou paymentMethod = 'free'
+    if (amount === 0 || payment.paymentMethod === 'free') {
       stats.totalGratuito += 1;
     }
   });
@@ -86,8 +86,8 @@ export const load: PageServerLoad = async () => {
         ));
 
       const totalMatriculas = enrollments.length;
-      const pagantes = coursePayments.filter(p => (p.finalAmount || 0) > 0).length;
-      const naoPagantes = coursePayments.filter(p => (p.finalAmount || 0) === 0).length;
+      const pagantes = coursePayments.filter(p => (p.finalAmount || 0) > 0 && p.paymentMethod !== 'free').length;
+      const naoPagantes = coursePayments.filter(p => (p.finalAmount || 0) === 0 || p.paymentMethod === 'free').length;
       const semPagamento = totalMatriculas - coursePayments.length;
 
       return {

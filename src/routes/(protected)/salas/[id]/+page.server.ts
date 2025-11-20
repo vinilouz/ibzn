@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
-import { rooms, courseEnrollments, participants, courses, attendanceRecords, attendanceLists } from '$lib/server/db/schema';
+import { rooms, courseEnrollments, participants, courses, attendanceRecords, attendanceLists, facilitators } from '$lib/server/db/schema';
 import { eq, count, sql } from 'drizzle-orm';
 import { error } from '@sveltejs/kit';
 import { logger } from '$lib/utils/logger';
@@ -8,13 +8,13 @@ import { logger } from '$lib/utils/logger';
 export const load: PageServerLoad = async ({ params }) => {
     try {
         const roomId = parseInt(params.id);
-        
+
         const [room] = await db
             .select()
             .from(rooms)
             .where(eq(rooms.id, roomId))
             .limit(1);
-        
+
         if (!room) {
             throw error(404, 'Sala não encontrada');
         }
@@ -28,12 +28,14 @@ export const load: PageServerLoad = async ({ params }) => {
                 startTime: courses.startTime,
                 weekdays: courses.weekdays,
                 capacity: courses.capacity,
-                enrollmentCount: count(courseEnrollments.id)
+                enrollmentCount: count(courseEnrollments.id),
+                facilitatorName: facilitators.name
             })
             .from(courses)
             .leftJoin(courseEnrollments, eq(courses.id, courseEnrollments.courseId))
+            .leftJoin(facilitators, eq(courses.teacher, facilitators.id))
             .where(eq(courses.room, roomId))
-            .groupBy(courses.id);
+            .groupBy(courses.id, facilitators.name);
 
         const participantsInRoom = await db
             .select({
@@ -68,8 +70,8 @@ export const load: PageServerLoad = async ({ params }) => {
                 };
             })
         );
-        
-        return { 
+
+        return {
             room,
             courses: coursesInRoom,
             participants: participantsWithAttendance
