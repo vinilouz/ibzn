@@ -4,7 +4,6 @@
 	import { Calendar } from '$lib/components/ui/calendar';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import { Textarea } from '$lib/components/ui/textarea';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { Users, Plus, Trash2, Search, ChevronLeft, ChevronRight, Pencil } from 'lucide-svelte';
 	import { CalendarDate, getLocalTimeZone, type DateValue } from '@internationalized/date';
@@ -35,7 +34,15 @@
 	// Get dates that have events
 	const eventDates = $derived.by(() => {
 		if (!data.events) return new Set<string>();
-		return new Set(data.events.map(event => new Date(event.start).toISOString().split('T')[0]));
+		const dates = new Set(data.events.map(event => {
+			const date = new Date(event.start);
+			const year = date.getFullYear();
+			const month = String(date.getMonth() + 1).padStart(2, '0');
+			const day = String(date.getDate()).padStart(2, '0');
+			return `${year}-${month}-${day}`;
+		}));
+		
+		return dates;
 	});
 
 	// Filter and paginate all events
@@ -45,9 +52,17 @@
 
 		// Filter by selected date if enabled
 		if (filterBySelectedDate && selectedDate) {
-			const selectedDateStr = selectedDate.toDate(getLocalTimeZone()).toISOString().split('T')[0];
+			const year = selectedDate.year;
+			const month = String(selectedDate.month).padStart(2, '0');
+			const day = String(selectedDate.day).padStart(2, '0');
+			const selectedDateStr = `${year}-${month}-${day}`;
+			
 			events = events.filter(event => {
-				const eventDateStr = new Date(event.start).toISOString().split('T')[0];
+				const date = new Date(event.start);
+				const eventYear = date.getFullYear();
+				const eventMonth = String(date.getMonth() + 1).padStart(2, '0');
+				const eventDay = String(date.getDate()).padStart(2, '0');
+				const eventDateStr = `${eventYear}-${eventMonth}-${eventDay}`;
 				return eventDateStr === selectedDateStr;
 			});
 		}
@@ -84,18 +99,6 @@
 			prevFilterByDate = filterBySelectedDate;
 			prevSelectedDateStr = currentDateStr;
 		}
-	});
-
-	// Filtrar eventos pela data selecionada (for calendar view)
-	const filteredEvents = $derived.by(() => {
-		if (!selectedDate || !data.events) return [];
-
-		const selectedDateStr = selectedDate.toDate(getLocalTimeZone()).toISOString().split('T')[0];
-
-		return data.events.filter(event => {
-			const eventDateStr = new Date(event.start).toISOString().split('T')[0];
-			return eventDateStr === selectedDateStr;
-		});
 	});
 
 	function formatDateRange(start: string, end?: string | null): string {
@@ -554,29 +557,36 @@
 				{:else}
 					<!-- Calendário com marcadores -->
 					<div class="flex justify-center items-center w-full min-h-[400px]">
-						<Calendar type="single" bind:value={selectedDate} class="bg-transparent p-0 scale-150 [&_table]:w-full [&_td]:p-1 [&_th]:p-1" preventDeselect>
-							{#snippet day({ day, outside })}
+						<Calendar 
+							type="single" 
+							bind:value={selectedDate} 
+							class="bg-transparent p-0 scale-[1.275] [&_table]:w-full [&_td]:p-1 [&_th]:p-1"
+						>
+							{#snippet day({ day, outsideMonth })}
 								{@const dateStr = day ? `${day.year}-${String(day.month).padStart(2, '0')}-${String(day.day).padStart(2, '0')}` : ''}
-								{@const hasEvent = dateStr && eventDates.has(dateStr)}
-								<div class="relative flex h-10 w-10 items-center justify-center rounded-md {hasEvent && !outside ? 'bg-primary/20 font-semibold' : ''}">
-									<span class={outside ? 'text-muted-foreground/50' : hasEvent ? 'text-primary' : ''}>{day?.day}</span>
-								</div>
+								{@const hasEvent = dateStr ? eventDates.has(dateStr) : false}
+								
+								<button
+									type="button"
+									class="relative flex h-10 w-10 items-center justify-center rounded-md cursor-pointer hover:bg-accent transition-colors"
+									onclick={() => {
+										if (day) {
+											selectedDate = new CalendarDate(day.year, day.month, day.day);
+											filterBySelectedDate = true;
+										}
+									}}
+								>
+									<span class="{outsideMonth ? 'text-muted-foreground/50' : ''}">
+										{day?.day}
+									</span>
+									{#if hasEvent && !outsideMonth}
+										<span class="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary"></span>
+									{/if}
+								</button>
 							{/snippet}
 						</Calendar>
 					</div>
 
-					<!-- Botão para mostrar todos -->
-					{#if filterBySelectedDate}
-						<div class="mt-4 flex justify-center">
-							<Button
-								variant="outline"
-								size="sm"
-								onclick={() => filterBySelectedDate = false}
-							>
-								Mostrar todos os eventos
-							</Button>
-						</div>
-					{/if}
 				{/if}
 			</CardContent>
 		</Card>
@@ -601,15 +611,37 @@
 							{/if}
 						</CardDescription>
 					</div>
-					{#if !filterBySelectedDate}
-						<Button
-							variant="outline"
-							size="sm"
-							onclick={() => filterBySelectedDate = true}
-						>
-							Filtrar por data
-						</Button>
-					{/if}
+					<div class="flex gap-2 items-center">
+						{#if filterBySelectedDate}
+							<Button
+								variant="outline"
+								size="sm"
+								onclick={() => filterBySelectedDate = false}
+							>
+								Mostrar todos os eventos
+							</Button>
+						{:else}
+							<Button
+								variant="outline"
+								size="sm"
+								onclick={() => filterBySelectedDate = true}
+							>
+								Filtrar por data
+							</Button>
+						{/if}
+						<Input
+							type="date"
+							class="w-auto"
+							onchange={(e) => {
+								const target = e.target as HTMLInputElement;
+								if (target.value) {
+									const [year, month, day] = target.value.split('-').map(Number);
+									selectedDate = new CalendarDate(year, month, day);
+									filterBySelectedDate = true;
+								}
+							}}
+						/>
+					</div>
 				</div>
 			</CardHeader>
 			<CardContent>
