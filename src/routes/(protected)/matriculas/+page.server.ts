@@ -132,11 +132,15 @@ export const actions: Actions = {
 
 			const formData = await event.request.formData();
 			const id = parseInt(formData.get('id') as string);
+			const participantId = parseInt(formData.get('participantId') as string);
+			const courseId = parseInt(formData.get('courseId') as string);
 			const amount = parseFloat(formData.get('amount') as string);
 			const status = formData.get('status') as 'active' | 'cancelled' | 'completed' | 'pending';
 			const notes = formData.get('notes') as string;
 
 			const updateData: any = {
+				participantId,
+				courseId,
 				amount,
 				notes: notes || null
 			};

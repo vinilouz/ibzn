@@ -478,7 +478,7 @@
 								>
 									<option value="">Selecione um professor</option>
 									{#each data.facilitators as facilitator}
-										<option value={facilitator.id}>{facilitator.name}</option>
+										<option value={facilitator.id.toString()}>{facilitator.name}</option>
 									{/each}
 								</select>
 							</div>
@@ -494,7 +494,7 @@
 								>
 									<option value="">Selecione uma sala</option>
 									{#each data.rooms as room}
-										<option value={room.id}>{room.name} - Sala {room.number}</option>
+										<option value={room.id.toString()}>{room.name} - Sala {room.number}</option>
 									{/each}
 								</select>
 							</div>

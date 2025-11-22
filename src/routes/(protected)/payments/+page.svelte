@@ -15,17 +15,17 @@
 	import { Plus, DollarSign, Check, X, Clock, RefreshCw, Search } from 'lucide-svelte';
 	import Pagination from '$lib/components/Pagination.svelte';
 
-	export let data;
+	let { data }: { data: any } = $props();
 
-	let drawerOpen = false;
-	let selectedPayment: (typeof data.payments)[0] | null = null;
-	let isEditMode = false;
-	let searchTerm = '';
-	let statusFilter = 'all';
-	let currentPage = 1;
+	let drawerOpen = $state(false);
+	let selectedPayment = $state<(typeof data.payments)[0] | null>(null);
+	let isEditMode = $state(false);
+	let searchTerm = $state('');
+	let statusFilter = $state('all');
+	let currentPage = $state(1);
 	const itemsPerPage = 10;
 
-	$: filteredPayments = data.payments.filter((payment) => {
+	const filteredPayments = $derived(data.payments.filter((payment: any) => {
 		// Filter by status
 		const statusMatch = statusFilter === 'all' || payment.payment.status === statusFilter;
 
@@ -37,41 +37,41 @@
 		const courseMatch = payment.courseName?.toLowerCase().includes(search);
 
 		return statusMatch && (nameMatch || courseMatch);
-	});
+	}));
 
-	$: paginatedPayments = (() => {
+	const paginatedPayments = $derived.by(() => {
 		const start = (currentPage - 1) * itemsPerPage;
 		const end = start + itemsPerPage;
 		return filteredPayments.slice(start, end);
-	})();
+	});
 
 	// Reset to page 1 when filters change
 	let prevSearchTerm = '';
 	let prevStatusFilter = 'all';
-	$: {
+	$effect(() => {
 		if (searchTerm !== prevSearchTerm || statusFilter !== prevStatusFilter) {
 			currentPage = 1;
 			prevSearchTerm = searchTerm;
 			prevStatusFilter = statusFilter;
 		}
-	}
+	});
 
 	// Form states
-	let selectedCourseId = '';
-	let amount = 0;
-	let discountPercentage = 0;
-	let paymentMethod = '';
+	let selectedCourseId = $state('');
+	let amount = $state(0);
+	let discountPercentage = $state(0);
+	let paymentMethod = $state('');
 
-	$: {
+	$effect(() => {
 		if (selectedCourseId) {
-			const course = data.courses.find((c) => c.id.toString() === selectedCourseId.toString());
+			const course = data.courses.find((c: any) => c.id.toString() === selectedCourseId.toString());
 			if (course) {
 				amount = course.price || 0;
 			}
 		}
-	}
+	});
 
-	$: finalAmount = amount - (amount * discountPercentage) / 100;
+	const finalAmount = $derived(amount - (amount * discountPercentage) / 100);
 
 	function openCreateDrawer() {
 		selectedPayment = null;
@@ -167,7 +167,7 @@
 		</div>
 		<button
 			type="button"
-			on:click={openCreateDrawer}
+			onclick={openCreateDrawer}
 			class="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
 		>
 			<Plus class="h-4 w-4" />
@@ -251,7 +251,7 @@
 								</TableCell>
 								<TableCell>{formatDate(payment.payment.createdAt)}</TableCell>
 								<TableCell class="text-right">
-									<Button variant="outline" size="sm" on:click={() => openEditDrawer(payment)}>
+									<Button variant="outline" size="sm" onclick={() => openEditDrawer(payment)}>
 										Gerenciar
 									</Button>
 								</TableCell>
@@ -277,7 +277,7 @@
 				<p class="mb-4 text-muted-foreground">Comece registrando o primeiro pagamento</p>
 				<button
 					type="button"
-					on:click={openCreateDrawer}
+					onclick={openCreateDrawer}
 					class="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
 				>
 					<Plus class="h-4 w-4" />
