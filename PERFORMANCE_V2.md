@@ -1,6 +1,6 @@
 # Otimizações de Performance v2 - Melhorias Adicionais
 
-## 🚀 Novas Otimizações Implementadas
+##  Novas Otimizações Implementadas
 
 ### 1. Cache LRU Inteligente (Melhorado)
 
@@ -99,7 +99,7 @@ compilerOptions: {
 }
 ```
 
-## 📊 Performance Esperada (v2)
+##  Performance Esperada (v2)
 
 ### Primeira carga (sem cache):
 - `/painel`: **~300-400ms** (antes: ~500ms)
@@ -115,7 +115,7 @@ compilerOptions: {
 - **Antes v1**: <100ms
 - **Depois v2**: **<20ms** 🚀
 
-## 🎯 Ganhos por Técnica
+##  Ganhos por Técnica
 
 | Técnica | Ganho | Quando |
 |---------|-------|--------|
@@ -126,7 +126,7 @@ compilerOptions: {
 | Promise.all | 75% | Queries paralelas |
 | SELECT específico | 40% | Menos dados |
 
-## 🔧 Configuração Recomendada
+##  Configuração Recomendada
 
 ### Para produção:
 ```typescript
@@ -142,7 +142,7 @@ private defaultTTL = 10000;  // 10 segundos
 private maxSize = 50;        // Menos memória
 ```
 
-## 📈 Monitoramento
+##  Monitoramento
 
 ### Ver estatísticas do cache:
 
@@ -165,7 +165,7 @@ Acesse: `http://localhost:5173/api/cache-stats`
 - **hits**: Efetividade do cache
 - **age**: Frescor dos dados
 
-## ⚠️ Considerações
+## Considerações
 
 ### Memória:
 - 100 entradas ≈ 5-10MB RAM
@@ -186,7 +186,7 @@ cache.invalidate('painel:stats');
 cache.invalidate('layout:common'); // Se afeta cursos/participantes
 ```
 
-## 🚀 Próximos Passos (Futuro)
+## Próximos Passos (Futuro)
 
 1. **Redis**: Cache distribuído para múltiplas instâncias
 2. **Service Worker**: Cache no browser
@@ -194,7 +194,7 @@ cache.invalidate('layout:common'); // Se afeta cursos/participantes
 4. **Virtual scroll**: Listas muito grandes
 5. **WebSockets**: Updates em tempo real sem polling
 
-## 📝 Checklist de Otimização
+##  Checklist de Otimização
 
 - [x] Cache em memória com LRU
 - [x] Índices no banco de dados

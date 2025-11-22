@@ -6,7 +6,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { goto, invalidateAll } from '$app/navigation';
-	import { Users, Plus, Trash2 } from 'lucide-svelte';
+	import { Users, Plus, Trash2, Search, ChevronLeft, ChevronRight, Pencil } from 'lucide-svelte';
 	import { CalendarDate, getLocalTimeZone, type DateValue } from '@internationalized/date';
 	import { enhance } from '$app/forms';
 	import type { PageData } from './$types';
@@ -16,7 +16,7 @@
 	let selectedDate = $state<DateValue>(
 		new CalendarDate(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate())
 	);
-	let sheetOpen = $state(false);
+	let showForm = $state(false);
 	let editingEventId = $state<number | null>(null);
 	let eventForm = $state({
 		nome: '',
@@ -26,8 +26,68 @@
 	});
 	let showValues = $state(false);
 
-	// Filtrar eventos pela data selecionada
-	const filteredEvents = $derived(() => {
+	// Event listing state
+	let eventSearchQuery = $state('');
+	let eventCurrentPage = $state(1);
+	let filterBySelectedDate = $state(true);
+	const eventsPerPage = 5;
+
+	// Get dates that have events
+	const eventDates = $derived.by(() => {
+		if (!data.events) return new Set<string>();
+		return new Set(data.events.map(event => new Date(event.start).toISOString().split('T')[0]));
+	});
+
+	// Filter and paginate all events
+	const filteredAllEvents = $derived.by(() => {
+		if (!data.events) return [];
+		let events = data.events;
+
+		// Filter by selected date if enabled
+		if (filterBySelectedDate && selectedDate) {
+			const selectedDateStr = selectedDate.toDate(getLocalTimeZone()).toISOString().split('T')[0];
+			events = events.filter(event => {
+				const eventDateStr = new Date(event.start).toISOString().split('T')[0];
+				return eventDateStr === selectedDateStr;
+			});
+		}
+
+		// Filter by search
+		if (eventSearchQuery.trim()) {
+			const search = eventSearchQuery.toLowerCase();
+			events = events.filter(event =>
+				event.nome?.toLowerCase().includes(search) ||
+				event.descricao?.toLowerCase().includes(search)
+			);
+		}
+
+		return events;
+	});
+
+	const paginatedEvents = $derived.by(() => {
+		const start = (eventCurrentPage - 1) * eventsPerPage;
+		const end = start + eventsPerPage;
+		return filteredAllEvents.slice(start, end);
+	});
+
+	const totalEventPages = $derived(Math.ceil(filteredAllEvents.length / eventsPerPage));
+
+	// Reset page when search, filter, or selected date changes
+	let prevEventSearch = '';
+	let prevFilterByDate = false;
+	let prevSelectedDateStr = '';
+	$effect(() => {
+		const currentDateStr = selectedDate ? selectedDate.toString() : '';
+		if (eventSearchQuery !== prevEventSearch || filterBySelectedDate !== prevFilterByDate || currentDateStr !== prevSelectedDateStr) {
+			eventCurrentPage = 1;
+			prevEventSearch = eventSearchQuery;
+			prevFilterByDate = filterBySelectedDate;
+			prevSelectedDateStr = currentDateStr;
+		}
+	});
+
+	// Filtrar eventos pela data selecionada (for calendar view)
+	const filteredEvents = $derived.by(() => {
 		if (!selectedDate || !data.events) return [];
 
 		const selectedDateStr = selectedDate.toDate(getLocalTimeZone()).toISOString().split('T')[0];
@@ -49,7 +109,7 @@
 		return `${startTime} - ${endTime}`;
 	}
 
-	function openCreateEventSheet() {
+	function openCreateEventForm() {
 		editingEventId = null;
 		eventForm = {
 			nome: '',
@@ -57,10 +117,10 @@
 			startTime: '09:00',
 			endTime: '10:00'
 		};
-		sheetOpen = true;
+		showForm = true;
 	}
 
-	function openEditEventSheet(event: any) {
+	function openEditEventForm(event: any) {
 		editingEventId = event.id;
 		const startDate = new Date(event.start);
 		const startTime = startDate.toTimeString().slice(0, 5);
@@ -71,13 +131,17 @@
 			endTime = endDate.toTimeString().slice(0, 5);
 		}
 
+		// Set selected date to event date
+		const eventDate = new Date(event.start);
+		selectedDate = new CalendarDate(eventDate.getFullYear(), eventDate.getMonth() + 1, eventDate.getDate());
+
 		eventForm = {
 			nome: event.nome,
 			descricao: event.descricao || '',
 			startTime,
 			endTime
 		};
-		sheetOpen = true;
+		showForm = true;
 	}
 
 	function resetForm() {
@@ -88,17 +152,29 @@
 			endTime: '10:00'
 		};
 		editingEventId = null;
-		sheetOpen = false;
+		showForm = false;
 	}
 
-	function getFormDateTimes() {
+	function formatEventDate(dateStr: string): string {
+		return new Date(dateStr).toLocaleDateString('pt-BR', {
+			day: '2-digit',
+			month: '2-digit',
+			year: 'numeric'
+		});
+	}
+
+	// Reactive form date-time values
+	const formStartDateTime = $derived.by(() => {
 		const date = selectedDate.toDate(getLocalTimeZone());
 		const dateStr = date.toISOString().split('T')[0];
-		return {
-			start: `${dateStr}T${eventForm.startTime}`,
-			end: `${dateStr}T${eventForm.endTime}`
-		};
-	}
+		return `${dateStr}T${eventForm.startTime}`;
+	});
+
+	const formEndDateTime = $derived.by(() => {
+		const date = selectedDate.toDate(getLocalTimeZone());
+		const dateStr = date.toISOString().split('T')[0];
+		return `${dateStr}T${eventForm.endTime}`;
+	});
 </script>
 
 <div class="space-y-8">
@@ -109,7 +185,7 @@
 
 	<!-- Cards de estatísticas -->
 	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-		<div class="rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 p-6 border">
+		<div class="rounded-lg bg-linear-to-r from-primary/10 to-primary/5 p-6 border">
 			<div class="flex items-center justify-between gap-3">
 				<div class="flex items-center gap-3">
 					<div class="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20">
@@ -130,7 +206,7 @@
 			</div>
 		</div>
 
-		<div class="rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 p-6 border">
+		<div class="rounded-lg bg-linear-to-r from-primary/10 to-primary/5 p-6 border">
 			<div class="flex items-center justify-between gap-3">
 				<div class="flex items-center gap-3">
 					<div class="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20">
@@ -151,7 +227,7 @@
 			</div>
 		</div>
 
-		<div class="rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 p-6 border">
+		<div class="rounded-lg bg-linear-to-r from-primary/10 to-primary/5 p-6 border">
 			<div class="flex items-center justify-between gap-3">
 				<div class="flex items-center gap-3">
 					<div class="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20">
@@ -172,7 +248,7 @@
 			</div>
 		</div>
 
-		<div class="rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 p-6 border">
+		<div class="rounded-lg bg-linear-to-r from-primary/10 to-primary/5 p-6 border">
 			<div class="flex items-center justify-between gap-3">
 				<div class="flex items-center gap-3">
 					<div class="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20">
@@ -247,7 +323,7 @@
 						{#each enrollments as enrollment}
 							{@const percentage = (enrollment.value / total) * 100}
 							<div class="flex items-center gap-3">
-								<div class="w-4 h-4 rounded-full flex-shrink-0" style="background-color: {enrollment.color}"></div>
+								<div class="w-4 h-4 rounded-full shrink-0" style="background-color: {enrollment.color}"></div>
 								<div>
 									<p class="text-sm text-muted-foreground">{enrollment.label}</p>
 									<p class="text-xl font-bold">{enrollment.value}</p>
@@ -367,130 +443,262 @@
 	</div>
 
 	<!-- Calendário e Eventos -->
-	<div class="flex justify-center">
-		<div class="flex gap-6 w-full {sheetOpen ? 'max-w-6xl' : 'max-w-4xl'}">
-			<Card class="w-fit">
-				<CardHeader>
-					<CardTitle>Eventos</CardTitle>
-					<CardDescription>Gerencie os eventos do calendário</CardDescription>
-				</CardHeader>
-				<CardContent class="p-0">
-					<div class="flex gap-0">
-						<div class="p-4">
-							<Calendar type="single" bind:value={selectedDate} class="bg-transparent p-0" preventDeselect />
+	<div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+		<!-- Card do Calendário / Formulário -->
+		<Card>
+			<CardHeader>
+				<div class="flex items-center justify-between">
+					<div>
+						<CardTitle>Eventos</CardTitle>
+						<CardDescription>
+							{showForm ? (editingEventId ? 'Editar evento' : 'Criar novo evento') : 'Clique em uma data para ver os eventos'}
+						</CardDescription>
+					</div>
+					<Button variant="ghost" size="icon" title={showForm ? 'Voltar ao Calendário' : 'Adicionar Evento'} onclick={() => showForm ? resetForm() : openCreateEventForm()}>
+						<Plus class="h-4 w-4 {showForm ? 'rotate-45' : ''} transition-transform" />
+						<span class="sr-only">{showForm ? 'Voltar' : 'Adicionar Evento'}</span>
+					</Button>
+				</div>
+			</CardHeader>
+			<CardContent>
+				{#if showForm}
+					<!-- Formulário de Criação/Edição -->
+					<form method="POST" action={editingEventId ? '?/updateEvent' : '?/createEvent'} use:enhance={() => {
+						return async ({ result, update }) => {
+							if (result.type === 'success') {
+								resetForm();
+								await update();
+							} else {
+								console.error('Erro ao criar evento:', result);
+								await update();
+							}
+						};
+					}} class="space-y-4">
+						{#if editingEventId}
+							<input type="hidden" name="id" value={editingEventId} />
+						{/if}
+
+						<div class="space-y-2">
+							<Label for="eventDate">Data do Evento *</Label>
+							<input
+								id="eventDate"
+								type="date"
+								class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+								value={`${selectedDate.year}-${String(selectedDate.month).padStart(2, '0')}-${String(selectedDate.day).padStart(2, '0')}`}
+								onchange={(e) => {
+									const target = e.target as HTMLInputElement;
+									if (target.value) {
+										const [year, month, day] = target.value.split('-').map(Number);
+										selectedDate = new CalendarDate(year, month, day);
+									}
+								}}
+							/>
 						</div>
-						<div class="flex flex-col border-l w-[300px]">
-							<div class="flex items-center justify-between border-b px-4 py-3">
-								<div class="text-sm font-medium">
-									{selectedDate.toDate(getLocalTimeZone()).toLocaleDateString('pt-BR', {
-										day: 'numeric',
-										month: 'long',
-										year: 'numeric',
-									})}
-								</div>
-								<Button variant="ghost" size="icon" class="size-8" title="Adicionar Evento" onclick={openCreateEventSheet}>
-									<Plus class="h-4 w-4" />
-									<span class="sr-only">Adicionar Evento</span>
-								</Button>
+
+						<div class="space-y-2">
+							<Label for="nome">Nome do Evento *</Label>
+							<input
+								id="nome"
+								name="nome"
+								type="text"
+								class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+								bind:value={eventForm.nome}
+								required
+							/>
+						</div>
+
+						<div class="space-y-2">
+							<Label for="descricao">Descrição</Label>
+							<textarea
+								id="descricao"
+								name="descricao"
+								rows={3}
+								class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+								bind:value={eventForm.descricao}
+							></textarea>
+						</div>
+
+						<div class="grid grid-cols-2 gap-4">
+							<div class="space-y-2">
+								<Label for="startTime">Hora de Início *</Label>
+								<input
+									id="startTime"
+									name="startTime"
+									type="time"
+									class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+									bind:value={eventForm.startTime}
+									required
+								/>
 							</div>
-							<div class="flex flex-col gap-2 p-4 overflow-y-auto h-[320px]">
-								{#each filteredEvents() as event (event.id)}
-									<div class="bg-muted after:bg-primary/70 relative rounded-md p-2 pl-6 pr-16 text-sm after:absolute after:inset-y-2 after:left-2 after:w-1 after:rounded-full hover:bg-muted/80 transition-colors group cursor-pointer" onclick={() => openEditEventSheet(event)}>
+
+							<div class="space-y-2">
+								<Label for="endTime">Hora de Fim</Label>
+								<input
+									id="endTime"
+									name="endTime"
+									type="time"
+									class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+									bind:value={eventForm.endTime}
+								/>
+							</div>
+						</div>
+
+						<input type="hidden" name="start" value={formStartDateTime} />
+						<input type="hidden" name="end" value={formEndDateTime} />
+
+						<div class="flex gap-2 pt-4">
+							<Button type="submit" class="flex-1">{editingEventId ? 'Salvar' : 'Criar Evento'}</Button>
+							<Button type="button" variant="outline" onclick={resetForm}>Cancelar</Button>
+						</div>
+					</form>
+				{:else}
+					<!-- Calendário com marcadores -->
+					<div class="flex justify-center items-center w-full min-h-[400px]">
+						<Calendar type="single" bind:value={selectedDate} class="bg-transparent p-0 scale-150 [&_table]:w-full [&_td]:p-1 [&_th]:p-1" preventDeselect>
+							{#snippet day({ day, outside })}
+								{@const dateStr = day ? `${day.year}-${String(day.month).padStart(2, '0')}-${String(day.day).padStart(2, '0')}` : ''}
+								{@const hasEvent = dateStr && eventDates.has(dateStr)}
+								<div class="relative flex h-10 w-10 items-center justify-center rounded-md {hasEvent && !outside ? 'bg-primary/20 font-semibold' : ''}">
+									<span class={outside ? 'text-muted-foreground/50' : hasEvent ? 'text-primary' : ''}>{day?.day}</span>
+								</div>
+							{/snippet}
+						</Calendar>
+					</div>
+
+					<!-- Botão para mostrar todos -->
+					{#if filterBySelectedDate}
+						<div class="mt-4 flex justify-center">
+							<Button
+								variant="outline"
+								size="sm"
+								onclick={() => filterBySelectedDate = false}
+							>
+								Mostrar todos os eventos
+							</Button>
+						</div>
+					{/if}
+				{/if}
+			</CardContent>
+		</Card>
+
+		<!-- Card da Listagem de Eventos -->
+		<Card>
+			<CardHeader>
+				<div class="flex items-start justify-between">
+					<div>
+						<CardTitle>
+							{#if filterBySelectedDate}
+								Eventos em {selectedDate.toDate(getLocalTimeZone()).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })} ({filteredAllEvents.length})
+							{:else}
+								Todos os Eventos ({filteredAllEvents.length})
+							{/if}
+						</CardTitle>
+						<CardDescription>
+							{#if filterBySelectedDate}
+								Clique em outra data no calendário para filtrar
+							{:else}
+								Lista completa de eventos cadastrados
+							{/if}
+						</CardDescription>
+					</div>
+					{#if !filterBySelectedDate}
+						<Button
+							variant="outline"
+							size="sm"
+							onclick={() => filterBySelectedDate = true}
+						>
+							Filtrar por data
+						</Button>
+					{/if}
+				</div>
+			</CardHeader>
+			<CardContent>
+				<!-- Search Bar -->
+				<div class="relative mb-4">
+					<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+					<Input
+						type="text"
+						placeholder="Buscar eventos..."
+						bind:value={eventSearchQuery}
+						class="pl-10"
+					/>
+				</div>
+
+				<!-- Event List -->
+				<div class="space-y-2 min-h-[280px]">
+					{#if paginatedEvents.length > 0}
+						{#each paginatedEvents as event (event.id)}
+							<div class="bg-muted relative rounded-md p-3 text-sm hover:bg-muted/80 transition-colors group">
+								<div class="flex items-start justify-between">
+									<div class="flex-1">
 										<div class="font-medium">{event.nome}</div>
 										<div class="text-muted-foreground text-xs">
-											{formatDateRange(event.start, event.end)}
+											{formatEventDate(event.start)} • {formatDateRange(event.start, event.end)}
 										</div>
 										{#if event.descricao}
-											<div class="text-muted-foreground text-xs mt-1">{event.descricao}</div>
+											<div class="text-muted-foreground text-xs mt-1 line-clamp-1">{event.descricao}</div>
 										{/if}
+									</div>
+									<div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+										<Button variant="ghost" size="icon" class="h-7 w-7" onclick={() => openEditEventForm(event)}>
+											<Pencil class="h-3 w-3" />
+										</Button>
 										<form method="POST" action="?/deleteEvent" use:enhance={() => {
 											return async ({ result }) => {
 												if (result.type === 'success') {
 													await invalidateAll();
 												}
 											};
-										}} class="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity" onclick={(e) => e.stopPropagation()}>
+										}}>
 											<input type="hidden" name="id" value={event.id} />
-											<Button type="submit" variant="ghost" size="icon" class="h-6 w-6 hover:bg-destructive/10">
+											<Button type="submit" variant="ghost" size="icon" class="h-7 w-7 hover:bg-destructive/10">
 												<Trash2 class="h-3 w-3 text-destructive" />
 											</Button>
 										</form>
 									</div>
-								{:else}
-									<p class="text-sm text-muted-foreground text-center py-4">Nenhum evento nesta data</p>
-								{/each}
+								</div>
 							</div>
-						</div>
-					</div>
-				</CardContent>
-			</Card>
-
-			<!-- Card para criar/editar evento -->
-			{#if sheetOpen}
-				<Card class="w-[400px] flex-shrink-0">
-					<CardHeader>
-						<CardTitle>{editingEventId ? 'Editar Evento' : 'Criar Novo Evento'}</CardTitle>
-						<CardDescription>
-							{editingEventId ? 'Edite os detalhes do evento' : 'Adicione um novo evento ao calendário'}
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<form method="POST" action={editingEventId ? '?/updateEvent' : '?/createEvent'} use:enhance={() => {
-							return async ({ result }) => {
-								if (result.type === 'success') {
-									resetForm();
-									await invalidateAll();
-								}
-							};
-						}} class="space-y-4">
-							{#if editingEventId}
-								<input type="hidden" name="id" value={editingEventId} />
+						{/each}
+					{:else}
+						<div class="text-center py-8 text-muted-foreground">
+							{#if eventSearchQuery}
+								Nenhum evento encontrado
+							{:else if filterBySelectedDate}
+								Nenhum evento nesta data
+							{:else}
+								Nenhum evento cadastrado
 							{/if}
+						</div>
+					{/if}
+				</div>
 
-							<div class="space-y-2">
-								<Label>Data do Evento</Label>
-								<div class="text-sm font-medium p-2 bg-muted rounded-md">
-									{selectedDate.toDate(getLocalTimeZone()).toLocaleDateString('pt-BR', {
-										day: 'numeric',
-										month: 'long',
-										year: 'numeric',
-									})}
-								</div>
-							</div>
+				<!-- Pagination -->
+				{#if totalEventPages > 1}
+					<div class="flex items-center justify-between mt-4 pt-4 border-t">
+						<Button
+							variant="outline"
+							size="sm"
+							disabled={eventCurrentPage === 1}
+							onclick={() => eventCurrentPage--}
+						>
+							<ChevronLeft class="h-4 w-4" />
+						</Button>
 
-							<div class="space-y-2">
-								<Label for="nome">Nome do Evento *</Label>
-								<Input id="nome" name="nome" bind:value={eventForm.nome} required />
-							</div>
+						<span class="text-sm text-muted-foreground">
+							{eventCurrentPage} / {totalEventPages}
+						</span>
 
-							<div class="space-y-2">
-								<Label for="descricao">Descrição</Label>
-								<Textarea id="descricao" name="descricao" bind:value={eventForm.descricao} rows={3} />
-							</div>
-
-							<div class="grid grid-cols-2 gap-4">
-								<div class="space-y-2">
-									<Label for="startTime">Hora de Início *</Label>
-									<Input id="startTime" name="startTime" type="time" bind:value={eventForm.startTime} required />
-								</div>
-
-								<div class="space-y-2">
-									<Label for="endTime">Hora de Fim</Label>
-									<Input id="endTime" name="endTime" type="time" bind:value={eventForm.endTime} />
-								</div>
-							</div>
-
-							<input type="hidden" name="start" value={getFormDateTimes().start} />
-							<input type="hidden" name="end" value={getFormDateTimes().end} />
-
-							<div class="flex gap-2 pt-4">
-								<Button type="submit" class="flex-1">{editingEventId ? 'Salvar' : 'Criar Evento'}</Button>
-								<Button type="button" variant="outline" onclick={resetForm}>Cancelar</Button>
-							</div>
-						</form>
-					</CardContent>
-				</Card>
-			{/if}
-		</div>
+						<Button
+							variant="outline"
+							size="sm"
+							disabled={eventCurrentPage === totalEventPages}
+							onclick={() => eventCurrentPage++}
+						>
+							<ChevronRight class="h-4 w-4" />
+						</Button>
+					</div>
+				{/if}
+			</CardContent>
+		</Card>
 	</div>
 </div>

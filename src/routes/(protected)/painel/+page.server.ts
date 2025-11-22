@@ -14,7 +14,7 @@ export const load: PageServerLoad = async (event) => {
 		async () => {
 			return Promise.all([
 				db.select().from(rooms).limit(50),
-				db.select().from(events).limit(100),
+				db.select().from(events),
 				Promise.all([
 					db.select({
 						participantCount: count(),
