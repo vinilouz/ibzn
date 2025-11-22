@@ -1,6 +1,6 @@
 import type { Actions, PageServerLoad } from './$types.js';
 import { db } from '$lib/server/db';
-import { facilitators } from '$lib/server/db/schema';
+import { facilitators, rooms, appointments, courses, attendanceLists } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 
 export const load: PageServerLoad = async () => {
@@ -61,7 +61,41 @@ export const actions: Actions = {
     console.log('Ação DELETE chamada');
     const form = await request.formData();
     const id = Number(form.get('id'));
+
+    // Deletar/atualizar todos os registros relacionados antes de deletar o facilitador
+    // Isso é necessário porque algumas foreign keys não têm onDelete cascade configurado
+
+    // 1. Atualizar salas (setar facilitatorId como null ao invés de deletar)
+    await db.update(rooms)
+      .set({ facilitatorId: null })
+      .where(eq(rooms.facilitatorId, id));
+
+    // 2. Atualizar appointments (setar facilitatorId como null ao invés de deletar)
+    await db.update(appointments)
+      .set({ facilitatorId: null })
+      .where(eq(appointments.facilitatorId, id));
+
+    // 3. Deletar listas de presença criadas por este facilitador (tem cascade)
+    await db.delete(attendanceLists)
+      .where(eq(attendanceLists.createdBy, id));
+
+    // 4. Verificar se há cursos usando este facilitador como teacher
+    // Não vamos deletar cursos, apenas impedimos a exclusão se houver cursos ativos
+    const coursesUsingFacilitator = await db
+      .select()
+      .from(courses)
+      .where(eq(courses.teacher, id));
+
+    if (coursesUsingFacilitator.length > 0) {
+      return {
+        success: false,
+        error: `Não é possível excluir este facilitador pois existem ${coursesUsingFacilitator.length} curso(s) atribuído(s) a ele. Remova o facilitador dos cursos primeiro.`
+      };
+    }
+
+    // 5. Finalmente deletar o facilitador
     await db.delete(facilitators).where(eq(facilitators.id, id));
+
     return { success: true };
   }
 };

@@ -111,34 +111,40 @@
 		</CardHeader>
 		<CardContent>
 			<form method="POST" action="?/changePassword" use:enhance={enhanceWithLoadingAndCallback(handleSuccess)} class="space-y-4">
-				<div class="rounded-lg bg-blue-50 border border-blue-200 p-3 mb-4">
-					<p class="text-sm text-blue-800">
-						<strong>Admin:</strong> Como administrador, você pode alterar a senha sem fornecer a senha atual.
-					</p>
+				<div class="space-y-2">
+					<Label for="currentPassword">Senha Atual *</Label>
+					<Input
+						id="currentPassword"
+						name="currentPassword"
+						type="password"
+						bind:value={passwordData.currentPassword}
+						placeholder="Digite sua senha atual"
+						required
+					/>
 				</div>
 
 				<div class="grid gap-4 md:grid-cols-2">
 					<div class="space-y-2">
 						<Label for="newPassword">Nova Senha *</Label>
-						<Input 
-							id="newPassword" 
-							name="newPassword" 
-							type="password" 
+						<Input
+							id="newPassword"
+							name="newPassword"
+							type="password"
 							bind:value={passwordData.newPassword}
 							placeholder="Mínimo 8 caracteres"
-							required 
+							required
 						/>
 					</div>
 
 					<div class="space-y-2">
 						<Label for="confirmPassword">Confirmar Nova Senha *</Label>
-						<Input 
-							id="confirmPassword" 
-							name="confirmPassword" 
-							type="password" 
+						<Input
+							id="confirmPassword"
+							name="confirmPassword"
+							type="password"
 							bind:value={passwordData.confirmPassword}
 							placeholder="Digite novamente"
-							required 
+							required
 						/>
 					</div>
 				</div>

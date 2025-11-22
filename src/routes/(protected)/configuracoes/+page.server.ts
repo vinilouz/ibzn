@@ -3,7 +3,7 @@ import { auth } from '$lib/auth.server';
 import { db } from '$lib/server/db';
 import { systemSettings } from '$lib/server/db/schema';
 import { eq, inArray } from 'drizzle-orm';
-
+    
 export const load = async (event: any) => {
 	const session = await auth.api.getSession({ headers: event.request.headers });
 
@@ -79,11 +79,12 @@ export const actions: Actions = {
 		}
 
 		const formData = await event.request.formData();
+		const currentPassword = formData.get('currentPassword') as string;
 		const newPassword = formData.get('newPassword') as string;
 		const confirmPassword = formData.get('confirmPassword') as string;
 
-		if (!newPassword || !confirmPassword) {
-			return fail(400, { message: 'Nova senha e confirmação são obrigatórios' });
+		if (!currentPassword || !newPassword || !confirmPassword) {
+			return fail(400, { message: 'Senha atual, nova senha e confirmação são obrigatórios' });
 		}
 
 		if (newPassword !== confirmPassword) {
@@ -95,10 +96,12 @@ export const actions: Actions = {
 		}
 
 		try {
-			// Admin pode alterar senha diretamente usando Better Auth internal API
-			await auth.api.setPassword({
+			// Usar a API do Better Auth no servidor para alterar senha
+			await auth.api.changePassword({
 				body: {
-					newPassword
+					newPassword: newPassword,
+					currentPassword: currentPassword,
+					revokeOtherSessions: true
 				},
 				headers: event.request.headers
 			});
@@ -106,7 +109,7 @@ export const actions: Actions = {
 			return { success: true, message: 'Senha alterada com sucesso!' };
 		} catch (error) {
 			console.error('Erro ao alterar senha:', error);
-			return fail(500, { message: 'Erro ao alterar senha.' });
+			return fail(500, { message: 'Erro ao alterar senha. Verifique se a senha atual está correta.' });
 		}
 	},
 

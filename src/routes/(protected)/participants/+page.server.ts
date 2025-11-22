@@ -1,6 +1,6 @@
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
-import { participants, courseEnrollments, courses } from '$lib/server/db/schema';
+import { participants, courseEnrollments, courses, attendanceRecords, appointments, payments } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 
 export const load: PageServerLoad = async () => {
@@ -82,6 +82,24 @@ export const actions: Actions = {
     const data = await request.formData();
     const id = Number(data.get('id'));
 
+    // Deletar todos os registros relacionados antes de deletar o participante
+    // Isso é necessário porque algumas foreign keys não têm onDelete cascade configurado
+
+    // 1. Deletar registros de presença
+    await db.delete(attendanceRecords).where(eq(attendanceRecords.participantId, id));
+
+    // 2. Atualizar appointments (setar participantId como null ao invés de deletar)
+    await db.update(appointments)
+      .set({ participantId: null })
+      .where(eq(appointments.participantId, id));
+
+    // 3. Deletar pagamentos (já tem cascade mas vamos garantir)
+    await db.delete(payments).where(eq(payments.participantId, id));
+
+    // 4. Deletar matrículas (já tem cascade mas vamos garantir)
+    await db.delete(courseEnrollments).where(eq(courseEnrollments.participantId, id));
+
+    // 5. Finalmente deletar o participante
     await db.delete(participants).where(eq(participants.id, id));
 
     return { success: true };
