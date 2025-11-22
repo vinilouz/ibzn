@@ -4,37 +4,44 @@ import { db } from '$lib/server/db';
 import { rooms, participants, facilitators, courses, courseEnrollments, events, payments } from '$lib/server/db/schema';
 import { count, eq, sql } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
+import { cache } from '$lib/server/cache';
 
 export const load: PageServerLoad = async (event) => {
 	const user = await requireAuth(event);
 
-	const [allRooms, allEvents, statsResult] = await Promise.all([
-		db.select().from(rooms),
-		db.select().from(events),
-		Promise.all([
-			db.select({
-				participantCount: count(),
-				facilitatorCount: sql<number>`(SELECT COUNT(*) FROM ${facilitators})`,
-				roomCount: sql<number>`(SELECT COUNT(*) FROM ${rooms})`,
-				courseCount: sql<number>`(SELECT COUNT(*) FROM ${courses})`
-			}).from(participants),
+	const [allRooms, allEvents, statsResult] = await cache.get(
+		'painel:stats',
+		async () => {
+			return Promise.all([
+				db.select().from(rooms).limit(50),
+				db.select().from(events).limit(100),
+				Promise.all([
+					db.select({
+						participantCount: count(),
+						facilitatorCount: sql<number>`(SELECT COUNT(*) FROM ${facilitators})`,
+						roomCount: sql<number>`(SELECT COUNT(*) FROM ${rooms})`,
+						courseCount: sql<number>`(SELECT COUNT(*) FROM ${courses})`
+					}).from(participants),
 
-			db.select({
-				paidPayments: sql<number>`COUNT(*) FILTER (WHERE ${payments.status} = 'paid')`,
-				pendingPayments: sql<number>`COUNT(*) FILTER (WHERE ${payments.status} = 'pending')`,
-				paidTotal: sql<number>`COALESCE(SUM(${payments.finalAmount}) FILTER (WHERE ${payments.status} = 'paid'), 0)`,
-				pendingTotal: sql<number>`COALESCE(SUM(${payments.finalAmount}) FILTER (WHERE ${payments.status} = 'pending'), 0)`
-			}).from(payments),
+					db.select({
+						paidPayments: sql<number>`COUNT(*) FILTER (WHERE ${payments.status} = 'paid')`,
+						pendingPayments: sql<number>`COUNT(*) FILTER (WHERE ${payments.status} = 'pending')`,
+						paidTotal: sql<number>`COALESCE(SUM(${payments.finalAmount}) FILTER (WHERE ${payments.status} = 'paid'), 0)`,
+						pendingTotal: sql<number>`COALESCE(SUM(${payments.finalAmount}) FILTER (WHERE ${payments.status} = 'pending'), 0)`
+					}).from(payments),
 
-			db.select({
-				activeEnrollments: sql<number>`COUNT(*) FILTER (WHERE ${courseEnrollments.status} = 'active')`,
-				completedEnrollments: sql<number>`COUNT(*) FILTER (WHERE ${courseEnrollments.status} = 'completed')`,
-				cancelledEnrollments: sql<number>`COUNT(*) FILTER (WHERE ${courseEnrollments.status} = 'cancelled')`,
-				droppedEnrollments: sql<number>`COUNT(*) FILTER (WHERE ${courseEnrollments.status} = 'dropped')`,
-				pendingEnrollments: sql<number>`COUNT(*) FILTER (WHERE ${courseEnrollments.status} = 'pending')`
-			}).from(courseEnrollments)
-		])
-	]);
+					db.select({
+						activeEnrollments: sql<number>`COUNT(*) FILTER (WHERE ${courseEnrollments.status} = 'active')`,
+						completedEnrollments: sql<number>`COUNT(*) FILTER (WHERE ${courseEnrollments.status} = 'completed')`,
+						cancelledEnrollments: sql<number>`COUNT(*) FILTER (WHERE ${courseEnrollments.status} = 'cancelled')`,
+						droppedEnrollments: sql<number>`COUNT(*) FILTER (WHERE ${courseEnrollments.status} = 'dropped')`,
+						pendingEnrollments: sql<number>`COUNT(*) FILTER (WHERE ${courseEnrollments.status} = 'pending')`
+					}).from(courseEnrollments)
+				])
+			]);
+		},
+		30000
+	);
 
 	const [basicCounts, paymentStats, enrollmentStats] = statsResult;
 	const stats = {
@@ -102,6 +109,7 @@ export const actions: Actions = {
 				createdAt: new Date().toISOString()
 			});
 
+			cache.invalidate('painel:stats');
 			return { success: true };
 		} catch (error) {
 			console.error('Erro ao criar evento:', error);
@@ -131,6 +139,7 @@ export const actions: Actions = {
 				})
 				.where(eq(events.id, parseInt(id)));
 
+			cache.invalidate('painel:stats');
 			return { success: true };
 		} catch (error) {
 			console.error('Erro ao atualizar evento:', error);
@@ -148,6 +157,7 @@ export const actions: Actions = {
 
 		try {
 			await db.delete(events).where(eq(events.id, parseInt(id)));
+			cache.invalidate('painel:stats');
 			return { success: true };
 		} catch (error) {
 			console.error('Erro ao deletar evento:', error);

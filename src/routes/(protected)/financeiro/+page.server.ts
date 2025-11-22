@@ -2,9 +2,11 @@ import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { payments, courses, participants, courseEnrollments } from '$lib/server/db/schema';
 import { eq, sql, and } from 'drizzle-orm';
+import { cache } from '$lib/server/cache';
 
 export const load: PageServerLoad = async () => {
-  const allPayments = await db
+  return cache.get('financeiro:dashboard', async () => {
+    const allPayments = await db
     .select({
       payment: payments,
       courseName: courses.courseName,
@@ -85,10 +87,11 @@ export const load: PageServerLoad = async () => {
       semPagamento: r.totalMatriculas - (r.pagantes + r.naoPagantes)
     })));
 
-  return {
-    payments: allPayments,
-    stats,
-    receitaPorCurso: receitaPorCursoArray,
-    cursosComEstatisticas,
-  };
+    return {
+      payments: allPayments,
+      stats,
+      receitaPorCurso: receitaPorCursoArray,
+      cursosComEstatisticas,
+    };
+  }, 40000);
 };

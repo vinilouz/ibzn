@@ -3,10 +3,13 @@ import { db } from '$lib/server/db';
 import { payments, participants, courseEnrollments } from '$lib/server/db/schema';
 import { courses } from '$lib/server/db/schema/courses';
 import { eq, desc, and } from 'drizzle-orm';
+import { cache } from '$lib/server/cache';
 
 export const load: PageServerLoad = async () => {
   try {
-    const [allPayments, allCourses, allParticipants] = await Promise.all([
+    const [allPayments, allCourses, allParticipants] = await cache.get(
+      'payments:list',
+      async () => Promise.all([
       db
         .select({
           payment: payments,
@@ -30,7 +33,9 @@ export const load: PageServerLoad = async () => {
         name: participants.name,
         phone: participants.phone
       }).from(participants)
-    ]);
+    ]),
+    30000
+  );
 
     return {
       payments: allPayments,
@@ -109,6 +114,8 @@ export const actions: Actions = {
       }
     }
 
+    cache.invalidatePattern('payments');
+    cache.invalidate('painel:stats');
     return { success: true };
   },
 
@@ -174,6 +181,8 @@ export const actions: Actions = {
       }
     }
 
+    cache.invalidatePattern('payments');
+    cache.invalidate('painel:stats');
     return { success: true };
   },
 
@@ -183,6 +192,8 @@ export const actions: Actions = {
 
     await db.delete(payments).where(eq(payments.id, id));
 
+    cache.invalidatePattern('payments');
+    cache.invalidate('painel:stats');
     return { success: true };
   }
 };

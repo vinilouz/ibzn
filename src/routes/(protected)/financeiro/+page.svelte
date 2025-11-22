@@ -1,9 +1,16 @@
 <script lang="ts">
   import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '$lib/components/ui/card';
   import { Badge } from '$lib/components/ui/badge';
-  import { DollarSign, Clock, CheckCircle, Gift, AlertCircle } from 'lucide-svelte';
+  import { Input } from '$lib/components/ui/input';
+  import { DollarSign, Clock, CheckCircle, Gift, AlertCircle, Search } from 'lucide-svelte';
+  import Pagination from '$lib/components/Pagination.svelte';
+  import type { PageData } from './$types';
 
-  export let data;
+  let { data }: { data: PageData } = $props();
+
+  let currentPageCursos = $state(1);
+  const itemsPerPageCursos = 5;
+  let searchTerm = $state('');
 
   function formatCurrency(value: number) {
     return new Intl.NumberFormat('pt-BR', {
@@ -35,6 +42,25 @@
       default: return status;
     }
   }
+
+  const filteredCursos = $derived.by(() => {
+    const cursos = data.cursosComEstatisticas || [];
+    if (!searchTerm.trim()) return cursos;
+
+    return cursos.filter(curso =>
+      curso.courseName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
+
+  const paginatedCursos = $derived.by(() => {
+    const start = (currentPageCursos - 1) * itemsPerPageCursos;
+    const end = start + itemsPerPageCursos;
+    return filteredCursos.slice(start, end);
+  });
+
+  $effect(() => {
+    currentPageCursos = 1;
+  });
 </script>
 
 <div class="container mx-auto p-6 max-w-7xl">
@@ -133,8 +159,23 @@
         {#if data.cursosComEstatisticas.length === 0}
           <p class="text-sm text-muted-foreground">Nenhum curso cadastrado ainda</p>
         {:else}
-          <div class="space-y-4">
-            {#each data.cursosComEstatisticas as curso}
+          <div class="mb-4">
+            <div class="relative">
+              <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Buscar por nome do curso..."
+                bind:value={searchTerm}
+                class="pl-10"
+              />
+            </div>
+          </div>
+
+          {#if filteredCursos.length === 0}
+            <p class="text-sm text-muted-foreground text-center py-8">Nenhum curso encontrado com "{searchTerm}"</p>
+          {:else}
+            <div class="space-y-4">
+            {#each paginatedCursos as curso}
               <div class="border-b pb-3 last:border-b-0">
                 <div class="flex items-center justify-between mb-2">
                   <p class="font-medium">{curso.courseName}</p>
@@ -160,62 +201,15 @@
               </div>
             {/each}
           </div>
+          <Pagination
+            bind:currentPage={currentPageCursos}
+            totalItems={filteredCursos.length}
+            itemsPerPage={itemsPerPageCursos}
+            onPageChange={() => {}}
+          />
+          {/if}
         {/if}
       </CardContent>
     </Card>
   </div>
-
-  <!-- Últimos Pagamentos -->
-  <Card>
-    <CardHeader>
-      <CardTitle>Últimos Pagamentos</CardTitle>
-      <CardDescription>Histórico recente de transações</CardDescription>
-    </CardHeader>
-    <CardContent>
-      {#if data.payments.length === 0}
-        <div class="flex flex-col items-center justify-center py-8">
-          <DollarSign class="w-12 h-12 text-muted-foreground mb-3" />
-          <p class="text-muted-foreground">Nenhum pagamento registrado ainda</p>
-        </div>
-      {:else}
-        <div class="space-y-3">
-          {#each data.payments.slice(0, 10) as item}
-            <div class="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors">
-              <div class="flex-1">
-                <div class="flex items-center gap-2 mb-1">
-                  <p class="font-medium">{item.participantName || 'Participante'}</p>
-                  {#if item.participantPhone}
-                    <span class="text-xs text-muted-foreground">({item.participantPhone})</span>
-                  {/if}
-                  <span class={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(item.payment.status)}`}>
-                    {getStatusText(item.payment.status)}
-                  </span>
-                </div>
-                <p class="text-sm text-muted-foreground">{item.courseName || 'Curso'}</p>
-                <p class="text-xs text-muted-foreground mt-1">{formatDate(item.payment.createdAt)}</p>
-              </div>
-              <div class="text-right">
-                {#if item.payment.discount && item.payment.discount > 0}
-                  <p class="text-xs text-muted-foreground line-through">{formatCurrency(item.payment.amount)}</p>
-                  <p class="text-sm text-green-600 font-medium">-{formatCurrency(item.payment.discount)}</p>
-                {/if}
-                <p class="font-bold text-lg">{formatCurrency(item.payment.finalAmount)}</p>
-                {#if item.payment.finalAmount === 0}
-                  <Badge variant="secondary" class="text-xs">Gratuito</Badge>
-                {/if}
-              </div>
-            </div>
-          {/each}
-        </div>
-
-        {#if data.payments.length > 10}
-          <div class="mt-4 text-center">
-            <a href="/payments" class="text-sm text-primary hover:underline">
-              Ver todos os pagamentos ({data.payments.length})
-            </a>
-          </div>
-        {/if}
-      {/if}
-    </CardContent>
-  </Card>
 </div>

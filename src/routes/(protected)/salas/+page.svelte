@@ -17,8 +17,9 @@
 		TableHeader,
 		TableRow
 	} from '$lib/components/ui/table';
-	import { X, Upload, Plus, Eye } from 'lucide-svelte';
+	import { X, Upload, Plus, Eye, Search } from 'lucide-svelte';
 	import * as Select from '$lib/components/ui/select';
+	import Pagination from '$lib/components/Pagination.svelte';
 
 	interface RoomFormData {
 		name: string;
@@ -35,6 +36,11 @@
 	let editingRoom = $state<number | null>(null);
 	let localPreview = $state<string | null>(null);
 	let uploadingImage = $state(false);
+	let currentPage = $state(1);
+	const itemsPerPage = 10;
+	let searchTerm = $state('');
+	let searchBy = $state<'name' | 'number' | 'capacity'>('name');
+	let showActiveRooms = $state(true);
 
 	const initialFormData: RoomFormData = {
 		name: '',
@@ -102,7 +108,6 @@
 	}
 
 	function resetForm() {
-		if (editingRoom === null && formData.name === '') return;
 		editingRoom = null;
 		formData = { ...initialFormData };
 		localPreview = null;
@@ -178,6 +183,45 @@
 		if (!date) return '-';
 		return new Date(date).toLocaleDateString('pt-BR');
 	}
+
+	const filteredRooms = $derived.by(() => {
+		const rooms = data.rooms || [];
+
+		return rooms.filter(room => {
+			const statusMatch = room.status === showActiveRooms;
+
+			if (!searchTerm.trim()) return statusMatch;
+
+			const term = searchTerm.toLowerCase();
+			let searchMatch = false;
+
+			switch (searchBy) {
+				case 'name':
+					searchMatch = room.name.toLowerCase().includes(term);
+					break;
+				case 'number':
+					searchMatch = room.number?.toString().includes(searchTerm);
+					break;
+				case 'capacity':
+					searchMatch = room.capacity?.toString().includes(searchTerm);
+					break;
+				default:
+					searchMatch = true;
+			}
+
+			return statusMatch && searchMatch;
+		});
+	});
+
+	const paginatedRooms = $derived.by(() => {
+		const start = (currentPage - 1) * itemsPerPage;
+		const end = start + itemsPerPage;
+		return filteredRooms.slice(start, end);
+	});
+
+	$effect(() => {
+		currentPage = 1;
+	});
 </script>
 
 <div class="mx-auto w-full max-w-7xl p-8">
@@ -197,8 +241,39 @@
 				<CardTitle>Salas Cadastradas ({data.rooms?.length || 0})</CardTitle>
 			</CardHeader>
 			<CardContent>
-				<div class="rounded-md border">
-					<Table>
+				<div class="mb-4 flex gap-2">
+					<div class="relative flex-1">
+						<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+						<Input
+							type="text"
+							placeholder="Buscar sala..."
+							bind:value={searchTerm}
+							class="pl-10"
+						/>
+					</div>
+					<select
+						bind:value={searchBy}
+						class="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						<option value="name">Nome</option>
+						<option value="number">Número</option>
+						<option value="capacity">Capacidade</option>
+					</select>
+					<div class="flex items-center gap-2 px-3 h-10 rounded-md border border-input bg-background">
+						<Switch bind:checked={showActiveRooms} />
+						<Label class="text-sm cursor-pointer whitespace-nowrap">
+							{showActiveRooms ? 'Sala Ativa' : 'Sala Inativa'}
+						</Label>
+					</div>
+				</div>
+
+				{#if filteredRooms.length === 0 && searchTerm}
+					<p class="text-sm text-muted-foreground text-center py-8">
+						Nenhuma sala encontrada com {searchBy === 'name' ? 'nome' : searchBy === 'number' ? 'número' : 'capacidade'} "{searchTerm}"
+					</p>
+				{:else}
+					<div class="rounded-md border">
+						<Table>
 						<TableHeader>
 							<TableRow>
 								<TableHead>ID</TableHead>
@@ -212,8 +287,8 @@
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{#if data.rooms && data.rooms.length > 0}
-								{#each data.rooms as room (room.id)}
+							{#if paginatedRooms && paginatedRooms.length > 0}
+								{#each paginatedRooms as room (room.id)}
 									<TableRow>
 										<TableCell class="font-medium">{room.id}</TableCell>
 										<TableCell>{room.name}</TableCell>
@@ -279,6 +354,13 @@
 						</TableBody>
 					</Table>
 				</div>
+				<Pagination
+					bind:currentPage
+					totalItems={filteredRooms.length}
+					{itemsPerPage}
+					onPageChange={() => {}}
+				/>
+				{/if}
 			</CardContent>
 		</Card>
 	{:else}

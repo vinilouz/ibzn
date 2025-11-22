@@ -1,18 +1,31 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
-  import { Card, CardHeader, CardContent } from '$lib/components/ui/card';
+  import { Card, CardHeader, CardContent, CardTitle } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
+  import { Label } from '$lib/components/ui/label';
   import { Sheet, SheetContent, SheetHeader, SheetTitle } from '$lib/components/ui/sheet';
   import { enhanceWithLoadingAndCallback } from '$lib/utils/enhance';
-  import { Plus, Pencil, Trash2, Calendar as CalendarIcon, Clock, User, MapPin, Mail, Phone } from 'lucide-svelte';
+  import { Plus, Pencil, Trash2, Calendar as CalendarIcon, Search } from 'lucide-svelte';
   import { Switch } from '$lib/components/ui/switch';
+  import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow
+  } from '$lib/components/ui/table';
+  import Pagination from '$lib/components/Pagination.svelte';
 
   let { data } = $props();
 
   let drawerOpen = $state(false);
+  let currentPage = $state(1);
+  const itemsPerPage = 10;
+  let searchTerm = $state('');
+  let showSignedUp = $state(false);
 
-  // Estados do formulário (apenas para criação)
   let selectedDateString = $state('');
   let name = $state('');
   let email = $state('');
@@ -25,7 +38,6 @@
   let selectedFacilitatorId = $state<number | null>(null);
   let selectedRoomId = $state<number | null>(null);
 
-  // Busca de participantes
   let participantSearchTerm = $state('');
   let searchResults = $state<Array<{id: number, name: string}>>([]);
   let showParticipantDropdown = $state(false);
@@ -68,6 +80,16 @@
     });
   }
 
+  function formatDate(dateTimeStr: string) {
+    const date = new Date(dateTimeStr);
+    return date.toLocaleDateString('pt-BR');
+  }
+
+  function formatTime(dateTimeStr: string) {
+    const date = new Date(dateTimeStr);
+    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
+
   function searchParticipants() {
     if (participantSearchTerm.length < 2) {
       searchResults = [];
@@ -92,7 +114,6 @@
     searchResults = [];
   }
 
-  // Watcher para limpar dados quando desmarca isSignedUp
   $effect(() => {
     if (!isSignedUp) {
       selectedParticipantId = null;
@@ -102,22 +123,18 @@
     }
   });
 
-  // Sincronizar participantSearchTerm com name quando isSignedUp é true
   $effect(() => {
     if (isSignedUp && participantSearchTerm) {
       searchParticipants();
     }
   });
 
-  // Computed value para o campo nome que sempre está sincronizado
   let displayName = $state('');
 
-  // Sincroniza displayName com a fonte correta baseado em isSignedUp
   $effect(() => {
     displayName = isSignedUp ? participantSearchTerm : name;
   });
 
-  // Sincroniza de volta quando o usuário digita
   function handleNameInput(value: string) {
     displayName = value;
     if (isSignedUp) {
@@ -127,10 +144,33 @@
       name = value;
     }
   }
+
+  const filteredAppointments = $derived.by(() => {
+    const appointments = data.appointments || [];
+
+    return appointments.filter(appointment => {
+      const signedUpMatch = appointment.isSignedUp === showSignedUp;
+
+      if (!searchTerm.trim()) return signedUpMatch;
+
+      const nameMatch = appointment.name.toLowerCase().includes(searchTerm.toLowerCase());
+
+      return signedUpMatch && nameMatch;
+    });
+  });
+
+  const paginatedAppointments = $derived.by(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return filteredAppointments.slice(start, end);
+  });
+
+  $effect(() => {
+    currentPage = 1;
+  });
 </script>
 
 <div class="container mx-auto p-6 max-w-7xl">
-  <!-- Header -->
   <div class="flex items-center justify-between mb-8">
     <div>
       <h1 class="text-3xl font-bold">Agendamentos</h1>
@@ -146,125 +186,142 @@
     </button>
   </div>
 
-  <!-- Lista de Agendamentos -->
-  <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-    {#each data.appointments as appointment}
-      <Card class="hover:shadow-lg transition-shadow h-full flex flex-col">
-        <CardHeader>
-          <div class="flex items-start justify-between">
-            <div class="flex-1">
-              <h3 class="font-semibold text-lg">{appointment.name}</h3>
-              <div class="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                <CalendarIcon class="w-4 h-4" />
-                <span>{formatDateTime(appointment.dateTime)}</span>
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent class="space-y-2 flex-1">
-          {#if appointment.reason}
-            <div class="flex items-start gap-2 text-sm">
-              <CalendarIcon class="w-4 h-4 text-muted-foreground mt-0.5" />
-              <span class="flex-1">{appointment.reason}</span>
-            </div>
-          {/if}
-          {#if appointment.facilitatorName}
-            <div class="flex items-center gap-2 text-sm">
-              <User class="w-4 h-4 text-muted-foreground" />
-              <span>Facilitador: {appointment.facilitatorName}</span>
-            </div>
-          {/if}
-          {#if appointment.roomName}
-            <div class="flex items-center gap-2 text-sm">
-              <MapPin class="w-4 h-4 text-muted-foreground" />
-              <span>Sala: {appointment.roomName}</span>
-            </div>
-          {/if}
-          {#if appointment.email}
-            <div class="flex items-center gap-2 text-sm">
-              <Mail class="w-4 h-4 text-muted-foreground" />
-              <span>{appointment.email}</span>
-            </div>
-          {/if}
-          {#if appointment.phone}
-            <div class="flex items-center gap-2 text-sm">
-              <Phone class="w-4 h-4 text-muted-foreground" />
-              <span>{appointment.phone}</span>
-            </div>
-          {/if}
-          {#if appointment.endTime}
-            <div class="flex items-center gap-2 text-sm">
-              <Clock class="w-4 h-4 text-muted-foreground" />
-              <span>Término: {appointment.endTime}</span>
-            </div>
-          {/if}
-        </CardContent>
-
-        <!-- Botões de Ação -->
-        <div class="px-6 pb-4 flex gap-2">
-          <a href="/calendar/{appointment.id}/edit" class="flex-1">
-            <Button
-              variant="outline"
-              size="sm"
-              class="w-full"
-            >
-              <Pencil class="w-4 h-4 mr-1" />
-              Editar
-            </Button>
-          </a>
-          <Button
-            variant="destructive"
-            size="sm"
-            class="flex-1"
-            onclick={async () => {
-              if (!confirm('Tem certeza que deseja excluir este agendamento?')) {
-                return;
-              }
-
-              try {
-                const formData = new FormData();
-                formData.append('id', String(appointment.id));
-
-                const response = await fetch('?/delete', {
-                  method: 'POST',
-                  body: formData
-                });
-
-                if (response.ok) {
-                  window.location.reload();
-                }
-              } catch (error) {
-                console.error('Error deleting appointment:', error);
-              }
-            }}
-          >
-            <Trash2 class="w-4 h-4 mr-1" />
-            Excluir
-          </Button>
+  <Card>
+    <CardHeader>
+      <CardTitle>
+        Agendamentos ({data.appointments?.length || 0})
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div class="mb-4 flex gap-2">
+        <div class="relative flex-1">
+          <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Buscar por nome..."
+            bind:value={searchTerm}
+            class="pl-10"
+          />
         </div>
-      </Card>
-    {/each}
-  </div>
+        <div class="flex items-center gap-2 px-3 h-10 rounded-md border border-input bg-background">
+          <Switch bind:checked={showSignedUp} />
+          <Label class="text-sm cursor-pointer whitespace-nowrap">
+            {showSignedUp ? 'Cadastrado' : 'Não Cadastrado'}
+          </Label>
+        </div>
+      </div>
 
-  {#if data.appointments.length === 0}
-    <Card class="mt-8">
-      <CardContent class="flex flex-col items-center justify-center py-12">
-        <CalendarIcon class="w-16 h-16 text-muted-foreground mb-4" />
-        <h3 class="text-xl font-semibold mb-2">Nenhum agendamento cadastrado</h3>
-        <p class="text-muted-foreground mb-4">Comece adicionando seu primeiro agendamento</p>
-        <button
-          type="button"
-          onclick={openCreateDrawer}
-          class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
-        >
-          <Plus class="w-4 h-4 mr-2" />
-          Adicionar Agendamento
-        </button>
-      </CardContent>
-    </Card>
-  {/if}
+      {#if filteredAppointments.length === 0 && searchTerm}
+        <p class="text-sm text-muted-foreground text-center py-8">
+          Nenhum agendamento encontrado com nome "{searchTerm}"
+        </p>
+      {:else if paginatedAppointments && paginatedAppointments.length > 0}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>ID</TableHead>
+              <TableHead>Nome</TableHead>
+              <TableHead>Data</TableHead>
+              <TableHead>Horário</TableHead>
+              <TableHead>Facilitador</TableHead>
+              <TableHead>Sala</TableHead>
+              <TableHead>Contato</TableHead>
+              <TableHead>Motivo</TableHead>
+              <TableHead class="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {#each paginatedAppointments as appointment}
+              <TableRow>
+                <TableCell class="font-medium">{appointment.id}</TableCell>
+                <TableCell>{appointment.name}</TableCell>
+                <TableCell>{formatDate(appointment.dateTime)}</TableCell>
+                <TableCell>
+                  {formatTime(appointment.dateTime)}
+                  {#if appointment.endTime}
+                    - {appointment.endTime}
+                  {/if}
+                </TableCell>
+                <TableCell>{appointment.facilitatorName || '-'}</TableCell>
+                <TableCell>{appointment.roomName || '-'}</TableCell>
+                <TableCell class="max-w-xs">
+                  <div class="text-sm">
+                    {#if appointment.email}
+                      <div class="truncate">{appointment.email}</div>
+                    {/if}
+                    {#if appointment.phone}
+                      <div class="truncate">{appointment.phone}</div>
+                    {/if}
+                    {#if !appointment.email && !appointment.phone}
+                      -
+                    {/if}
+                  </div>
+                </TableCell>
+                <TableCell class="max-w-xs truncate">{appointment.reason || '-'}</TableCell>
+                <TableCell class="text-right">
+                  <div class="flex gap-2 justify-end">
+                    <a href="/calendar/{appointment.id}/edit">
+                      <Button variant="outline" size="sm">
+                        <Pencil class="w-4 h-4" />
+                      </Button>
+                    </a>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onclick={async () => {
+                        if (!confirm('Tem certeza que deseja excluir este agendamento?')) {
+                          return;
+                        }
 
-  <!-- Drawer -->
+                        try {
+                          const formData = new FormData();
+                          formData.append('id', String(appointment.id));
+
+                          const response = await fetch('?/delete', {
+                            method: 'POST',
+                            body: formData
+                          });
+
+                          if (response.ok) {
+                            window.location.reload();
+                          }
+                        } catch (error) {
+                          console.error('Error deleting appointment:', error);
+                        }
+                      }}
+                    >
+                      <Trash2 class="w-4 h-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            {/each}
+          </TableBody>
+        </Table>
+        <Pagination
+          bind:currentPage
+          totalItems={filteredAppointments.length}
+          {itemsPerPage}
+          onPageChange={() => {}}
+        />
+      {:else if !searchTerm}
+        <div class="py-12 text-center text-muted-foreground">
+          <CalendarIcon class="mx-auto h-12 w-12 mb-4" />
+          <p class="text-lg font-medium">Nenhum agendamento cadastrado</p>
+          <p class="text-sm mb-4">Comece adicionando seu primeiro agendamento</p>
+          <button
+            type="button"
+            onclick={openCreateDrawer}
+            class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+          >
+            <Plus class="w-4 h-4 mr-2" />
+            Adicionar Agendamento
+          </button>
+        </div>
+      {/if}
+    </CardContent>
+  </Card>
+
   <Sheet bind:open={drawerOpen}>
     <SheetContent side="center" class="w-full sm:max-w-4xl overflow-y-auto max-h-[90vh]">
       <SheetHeader>
@@ -280,7 +337,6 @@
         >
 
           <div class="grid gap-4 py-4">
-            <!-- Data e Horários -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label for="dateInput" class="text-sm font-bold mb-2 block text-center">Data da Visita *</label>
@@ -316,7 +372,6 @@
               </div>
             </div>
 
-            <!-- Nome -->
             <div>
                 <label for="name" class="text-sm font-bold mb-2 block text-center">Nome *</label>
                 <div class="flex gap-2 items-start">
@@ -333,7 +388,6 @@
                       class="text-center opacity-50"
                       required
                     />
-                    <!-- Dropdown de Participantes -->
                     {#if isSignedUp && showParticipantDropdown && searchResults.length > 0}
                       <div class="absolute z-50 mt-1 w-full bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
                         {#each searchResults as participant}
@@ -358,7 +412,6 @@
                 <input type="hidden" name="participantId" value={selectedParticipantId || ''} />
             </div>
 
-            <!-- Email e Telefone -->
             {#if !isSignedUp}
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -386,7 +439,6 @@
               </div>
             {/if}
 
-            <!-- Motivo -->
             <div>
                 <label for="reason" class="text-sm font-bold mb-2 block text-center">Motivo da Visita</label>
                 <Input
@@ -398,7 +450,6 @@
                 />
             </div>
 
-            <!-- Facilitador e Sala -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label for="facilitatorId" class="text-sm font-bold mb-2 block text-center">Facilitador</label>
@@ -430,7 +481,6 @@
               </div>
             </div>
 
-            <!-- Botões de Ação -->
             <div class="flex gap-2 pt-4 justify-center">
               <Button type="submit" class="w-full md:w-1/2">
                 <Plus class="w-4 h-4 mr-2" />

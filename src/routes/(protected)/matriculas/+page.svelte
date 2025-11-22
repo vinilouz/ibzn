@@ -16,6 +16,7 @@
 		TableRow
 	} from '$lib/components/ui/table';
 	import { Plus, X } from 'lucide-svelte';
+	import Pagination from '$lib/components/Pagination.svelte';
 
 	interface EnrollmentFormData {
 		participantId: string;
@@ -29,6 +30,8 @@
 
 	let editingEnrollment = $state<number | null>(null);
 	let statusFilter = $state<string>('all');
+	let currentPage = $state(1);
+	const itemsPerPage = 10;
 
 	const initialFormData: EnrollmentFormData = {
 		participantId: '',
@@ -160,6 +163,16 @@
 		};
 		return badges[status as keyof typeof badges] || badges.active;
 	}
+
+	const paginatedEnrollments = $derived.by(() => {
+		const start = (currentPage - 1) * itemsPerPage;
+		const end = start + itemsPerPage;
+		return filteredEnrollments.slice(start, end);
+	});
+
+	$effect(() => {
+		currentPage = 1;
+	});
 </script>
 
 <div class="mx-auto w-full max-w-7xl p-8">
@@ -277,7 +290,7 @@
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{#each filteredEnrollments as enrollment}
+							{#each paginatedEnrollments as enrollment}
 								{@const badge = getStatusBadge(enrollment.status || 'active')}
 								<TableRow>
 									<TableCell>
@@ -317,6 +330,12 @@
 						</TableBody>
 					</Table>
 				</div>
+				<Pagination
+					bind:currentPage
+					totalItems={filteredEnrollments.length}
+					{itemsPerPage}
+					onPageChange={() => {}}
+				/>
 			</CardContent>
 		</Card>
 	{:else}

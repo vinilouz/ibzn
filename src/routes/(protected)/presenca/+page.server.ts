@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
 import { courses, courseEnrollments } from '$lib/server/db/schema';
-import { eq, count } from 'drizzle-orm';
+import { eq, count, and } from 'drizzle-orm';
 import { logger } from '$lib/utils/logger';
 
 export const load = async () => {
@@ -22,7 +22,12 @@ export const load = async () => {
 						count: count()
 					})
 					.from(courseEnrollments)
-					.where(eq(courseEnrollments.courseId, course.id));
+					.where(
+						and(
+							eq(courseEnrollments.courseId, course.id),
+							eq(courseEnrollments.status, 'active')
+						)
+					);
 
 				return {
 					...course,

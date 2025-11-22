@@ -16,7 +16,9 @@
 		TableHeader,
 		TableRow
 	} from '$lib/components/ui/table';
-	import { Plus } from 'lucide-svelte';
+	import { Plus, Search } from 'lucide-svelte';
+	import { Switch } from '$lib/components/ui/switch';
+	import Pagination from '$lib/components/Pagination.svelte';
 
 	interface CourseFormData {
 		courseName: string;
@@ -41,6 +43,10 @@
 	});
 
 	let editingCourse = $state<number | null>(null);
+	let currentPage = $state(1);
+	const itemsPerPage = 10;
+	let searchTerm = $state('');
+	let showAvailableCourses = $state(true);
 	
 	const initialFormData: CourseFormData = {
 		courseName: '',
@@ -198,6 +204,37 @@
 		if (!start || !end) return '-';
 		return `${start.substring(0, 5)} - ${end.substring(0, 5)}`;
 	}
+
+	function isCursoCheio(course: any): boolean {
+		const totalStudents = course.totalStudents || course.enrollmentCount || 0;
+		const capacity = course.capacity || 0;
+		return capacity > 0 && totalStudents >= capacity;
+	}
+
+	const filteredCourses = $derived.by(() => {
+		const courses = data.courses || [];
+
+		return courses.filter(course => {
+			const isFull = isCursoCheio(course);
+			const availabilityMatch = showAvailableCourses ? !isFull : isFull;
+
+			if (!searchTerm.trim()) return availabilityMatch;
+
+			const nameMatch = course.courseName.toLowerCase().includes(searchTerm.toLowerCase());
+
+			return availabilityMatch && nameMatch;
+		});
+	});
+
+	const paginatedCourses = $derived.by(() => {
+		const start = (currentPage - 1) * itemsPerPage;
+		const end = start + itemsPerPage;
+		return filteredCourses.slice(start, end);
+	});
+
+	$effect(() => {
+		currentPage = 1;
+	});
 </script>
 
 <div class="mx-auto w-full max-w-7xl p-8">
@@ -217,6 +254,29 @@
 				<CardTitle>Cursos Cadastrados ({data.courses?.length || 0})</CardTitle>
 			</CardHeader>
 			<CardContent>
+				<div class="mb-4 flex gap-2">
+					<div class="relative flex-1">
+						<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+						<Input
+							type="text"
+							placeholder="Buscar curso..."
+							bind:value={searchTerm}
+							class="pl-10"
+						/>
+					</div>
+					<div class="flex items-center gap-2 px-3 h-10 rounded-md border border-input bg-background">
+						<Switch bind:checked={showAvailableCourses} />
+						<Label class="text-sm cursor-pointer whitespace-nowrap">
+							{showAvailableCourses ? 'Disponível' : 'Cheio'}
+						</Label>
+					</div>
+				</div>
+
+				{#if filteredCourses.length === 0 && searchTerm}
+					<p class="text-sm text-muted-foreground text-center py-8">
+						Nenhum curso encontrado com nome "{searchTerm}"
+					</p>
+				{:else}
 				<div class="rounded-md border overflow-x-auto">
 					<Table>
 						<TableHeader>
@@ -235,8 +295,8 @@
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{#if data.courses && data.courses.length > 0}
-								{#each data.courses as course (course.id)}
+							{#if paginatedCourses && paginatedCourses.length > 0}
+								{#each paginatedCourses as course (course.id)}
 									<TableRow>
 										<TableCell class="font-medium">{course.id}</TableCell>
 										<TableCell class="max-w-xs truncate">{course.courseName}</TableCell>
@@ -255,12 +315,13 @@
 										</TableCell>
 										<TableCell>{formatDate(course.startDate)}</TableCell>
 										<TableCell>
+											{@const isFull = isCursoCheio(course)}
 											<span
-												class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold {course.isFull
+												class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold {isFull
 													? 'bg-red-100 text-red-800'
 													: 'bg-green-100 text-green-800'}"
 											>
-												{course.isFull ? 'Cheio' : 'Disponível'}
+												{isFull ? 'Cheio' : 'Disponível'}
 											</span>
 										</TableCell>
 										<TableCell class="text-right">
@@ -296,6 +357,13 @@
 						</TableBody>
 					</Table>
 				</div>
+				<Pagination
+					bind:currentPage
+					totalItems={filteredCourses.length}
+					{itemsPerPage}
+					onPageChange={() => {}}
+				/>
+				{/if}
 			</CardContent>
 		</Card>
 	{:else}

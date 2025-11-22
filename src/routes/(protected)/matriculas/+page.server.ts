@@ -5,10 +5,13 @@ import { eq, desc } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
 import { logger } from '$lib/utils/logger';
 import { requireAuth } from '$lib/server/middleware/auth';
+import { cache } from '$lib/server/cache';
 
 export const load = async () => {
 	try {
-		const [enrollments, allCourses, allParticipants] = await Promise.all([
+		const [enrollments, allCourses, allParticipants] = await cache.get(
+			'enrollments:list',
+			async () => Promise.all([
 			db
 				.select({
 					id: courseEnrollments.id,
@@ -39,7 +42,9 @@ export const load = async () => {
 				name: participants.name,
 				phone: participants.phone
 			}).from(participants)
-		]);
+		]),
+		30000
+	);
 
 		return {
 			enrollments,
@@ -74,6 +79,8 @@ export const actions: Actions = {
 				notes: notes || null
 			});
 
+			cache.invalidatePattern('enrollments');
+			cache.invalidate('painel:stats');
 			return { success: true };
 		} catch (error) {
 			logger.error('Erro ao criar matrícula:', error);
@@ -107,6 +114,8 @@ export const actions: Actions = {
 
 			logger.info(`Status atualizado com sucesso:`, result);
 
+			cache.invalidatePattern('enrollments');
+			cache.invalidate('painel:stats');
 			return { success: true };
 		} catch (error) {
 			logger.error('Erro ao atualizar status:', error);
@@ -145,6 +154,8 @@ export const actions: Actions = {
 
 			logger.info(`Matrícula ${id} atualizada com sucesso`);
 
+			cache.invalidatePattern('enrollments');
+			cache.invalidate('painel:stats');
 			return { success: true };
 		} catch (error) {
 			logger.error('Erro ao atualizar matrícula:', error);
@@ -164,6 +175,8 @@ export const actions: Actions = {
 
 			await db.delete(courseEnrollments).where(eq(courseEnrollments.id, id));
 
+			cache.invalidatePattern('enrollments');
+			cache.invalidate('painel:stats');
 			return { success: true };
 		} catch (error) {
 			logger.error('Erro ao deletar matrícula:', error);
