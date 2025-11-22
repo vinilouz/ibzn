@@ -1,27 +1,10 @@
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { participants, courseEnrollments, courses } from '$lib/server/db/schema';
-import { eq, ilike, or, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
-export const load: PageServerLoad = async ({ url }) => {
-  const page = Number(url.searchParams.get('page')) || 1;
-  const search = url.searchParams.get('search') || '';
-  const limit = 10;
-  const offset = (page - 1) * limit;
-
-  let query = db.select().from(participants);
-
-  if (search) {
-    query = query.where(
-      or(
-        ilike(participants.name, `%${search}%`),
-        ilike(participants.phone, `%${search}%`),
-        ilike(participants.address, `%${search}%`)
-      )
-    ) as any;
-  }
-
-  const allParticipants = await query.limit(limit).offset(offset);
+export const load: PageServerLoad = async () => {
+  const allParticipants = await db.select().from(participants);
 
   const participantIds = allParticipants.map(p => p.id);
 
@@ -40,7 +23,6 @@ export const load: PageServerLoad = async ({ url }) => {
           })
           .from(courseEnrollments)
           .leftJoin(courses, eq(courseEnrollments.courseId, courses.id))
-          .where(sql`${courseEnrollments.participantId} IN ${participantIds}`)
       : []
   ]);
 
@@ -48,29 +30,10 @@ export const load: PageServerLoad = async ({ url }) => {
     ...participant,
     courses: enrollments.filter(e => e.participantId === participant.id)
   }));
-  const countQuery = search
-    ? db.select({ count: sql<number>`count(*)` }).from(participants).where(
-        or(
-          ilike(participants.name, `%${search}%`),
-          ilike(participants.phone, `%${search}%`),
-          ilike(participants.address, `%${search}%`)
-        )
-      )
-    : db.select({ count: sql<number>`count(*)` }).from(participants);
-  
-  const [{ count }] = await countQuery as any;
-  const totalPages = Math.ceil(Number(count) / limit);
 
   return {
     participants: participantsWithCourses,
-    courses: allCourses,
-    pagination: {
-      currentPage: page,
-      totalPages,
-      totalItems: Number(count),
-      itemsPerPage: limit
-    },
-    search
+    courses: allCourses
   };
 };
 

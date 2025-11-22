@@ -1,51 +1,13 @@
 import type { Actions, PageServerLoad } from './$types.js';
 import { db } from '$lib/server/db';
 import { facilitators } from '$lib/server/db/schema';
-import { eq, ilike, or, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
-export const load: PageServerLoad = async ({ url }) => {
-  const page = Number(url.searchParams.get('page')) || 1;
-  const search = url.searchParams.get('search') || '';
-  const limit = 10;
-  const offset = (page - 1) * limit;
+export const load: PageServerLoad = async () => {
+  const list = await db.select().from(facilitators);
 
-  let query = db.select().from(facilitators);
-  
-  if (search) {
-    query = query.where(
-      or(
-        ilike(facilitators.name, `%${search}%`),
-        ilike(facilitators.phone, `%${search}%`),
-        ilike(facilitators.email, `%${search}%`)
-      )
-    ) as any;
-  }
-
-  const list = await query.limit(limit).offset(offset);
-  
-  // Get total count for pagination
-  const countQuery = search
-    ? db.select({ count: sql<number>`count(*)` }).from(facilitators).where(
-        or(
-          ilike(facilitators.name, `%${search}%`),
-          ilike(facilitators.phone, `%${search}%`),
-          ilike(facilitators.email, `%${search}%`)
-        )
-      )
-    : db.select({ count: sql<number>`count(*)` }).from(facilitators);
-  
-  const [{ count }] = await countQuery as any;
-  const totalPages = Math.ceil(Number(count) / limit);
-
-  return { 
-    facilitators: list,
-    pagination: {
-      currentPage: page,
-      totalPages,
-      totalItems: Number(count),
-      itemsPerPage: limit
-    },
-    search
+  return {
+    facilitators: list
   };
 };
 

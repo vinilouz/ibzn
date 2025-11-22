@@ -15,7 +15,7 @@
 		TableHeader,
 		TableRow
 	} from '$lib/components/ui/table';
-	import { Plus, X } from 'lucide-svelte';
+	import { Plus, X, Search } from 'lucide-svelte';
 	import Pagination from '$lib/components/Pagination.svelte';
 
 	interface EnrollmentFormData {
@@ -30,6 +30,7 @@
 
 	let editingEnrollment = $state<number | null>(null);
 	let statusFilter = $state<string>('all');
+	let searchTerm = $state('');
 	let currentPage = $state(1);
 	const itemsPerPage = 10;
 
@@ -55,8 +56,21 @@
 	});
 
 	const filteredEnrollments = $derived.by(() => {
-		if (statusFilter === 'all') return data.enrollments || [];
-		return (data.enrollments || []).filter((e: any) => e.status === statusFilter);
+		let enrollments = data.enrollments || [];
+
+		// Filter by status
+		if (statusFilter !== 'all') {
+			enrollments = enrollments.filter((e: any) => e.status === statusFilter);
+		}
+
+		// Filter by search term (participant name)
+		if (searchTerm.trim()) {
+			enrollments = enrollments.filter((e: any) =>
+				e.participantName?.toLowerCase().includes(searchTerm.toLowerCase())
+			);
+		}
+
+		return enrollments;
 	});
 
 	const stats = $derived.by(() => {
@@ -170,8 +184,15 @@
 		return filteredEnrollments.slice(start, end);
 	});
 
+	// Reset to page 1 when filters change
+	let prevSearchTerm = '';
+	let prevStatusFilter = 'all';
 	$effect(() => {
-		currentPage = 1;
+		if (searchTerm !== prevSearchTerm || statusFilter !== prevStatusFilter) {
+			currentPage = 1;
+			prevSearchTerm = searchTerm;
+			prevStatusFilter = statusFilter;
+		}
 	});
 </script>
 
@@ -277,6 +298,23 @@
 				</CardTitle>
 			</CardHeader>
 			<CardContent>
+				<div class="mb-4">
+					<div class="relative">
+						<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+						<Input
+							type="text"
+							placeholder="Buscar por nome do participante..."
+							bind:value={searchTerm}
+							class="pl-10"
+						/>
+					</div>
+				</div>
+
+				{#if filteredEnrollments.length === 0 && searchTerm}
+					<p class="text-sm text-muted-foreground text-center py-8">
+						Nenhuma matrícula encontrada para "{searchTerm}"
+					</p>
+				{:else}
 				<div class="rounded-md border">
 					<Table>
 						<TableHeader>
@@ -336,6 +374,7 @@
 					{itemsPerPage}
 					onPageChange={() => {}}
 				/>
+				{/if}
 			</CardContent>
 		</Card>
 	{:else}

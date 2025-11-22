@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import {
 		Table,
@@ -10,12 +11,13 @@
 		TableHeader,
 		TableRow
 	} from '$lib/components/ui/table';
-	import { ClipboardCheck } from 'lucide-svelte';
+	import { ClipboardCheck, Search } from 'lucide-svelte';
 	import Pagination from '$lib/components/Pagination.svelte';
 
 	let { data }: { data: any } = $props();
 
 	let currentPage = $state(1);
+	let searchTerm = $state('');
 	const itemsPerPage = 10;
 
 	function navigateToCourse(courseId: number) {
@@ -27,11 +29,27 @@
 		return new Date(date).toLocaleDateString('pt-BR');
 	}
 
-	const paginatedCourses = $derived.by(() => {
+	const filteredCourses = $derived.by(() => {
 		const courses = data.courses || [];
+		if (!searchTerm.trim()) return courses;
+		return courses.filter((c: any) =>
+			c.courseName?.toLowerCase().includes(searchTerm.toLowerCase())
+		);
+	});
+
+	const paginatedCourses = $derived.by(() => {
 		const start = (currentPage - 1) * itemsPerPage;
 		const end = start + itemsPerPage;
-		return courses.slice(start, end);
+		return filteredCourses.slice(start, end);
+	});
+
+	// Reset to page 1 when search changes
+	let prevSearchTerm = '';
+	$effect(() => {
+		if (searchTerm !== prevSearchTerm) {
+			currentPage = 1;
+			prevSearchTerm = searchTerm;
+		}
 	});
 </script>
 
@@ -46,11 +64,27 @@
 	<Card>
 		<CardHeader>
 			<CardTitle>
-				Cursos ({data.courses?.length || 0})
+				Cursos ({filteredCourses.length})
 			</CardTitle>
 		</CardHeader>
 		<CardContent>
-			{#if paginatedCourses && paginatedCourses.length > 0}
+			<div class="mb-4">
+				<div class="relative">
+					<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+					<Input
+						type="text"
+						placeholder="Buscar por nome do curso..."
+						bind:value={searchTerm}
+						class="pl-10"
+					/>
+				</div>
+			</div>
+
+			{#if filteredCourses.length === 0 && searchTerm}
+				<p class="text-sm text-muted-foreground text-center py-8">
+					Nenhum curso encontrado para "{searchTerm}"
+				</p>
+			{:else if paginatedCourses && paginatedCourses.length > 0}
 				<Table>
 					<TableHeader>
 						<TableRow>
@@ -84,7 +118,7 @@
 				</Table>
 				<Pagination
 					bind:currentPage
-					totalItems={data.courses?.length || 0}
+					totalItems={filteredCourses.length}
 					{itemsPerPage}
 					onPageChange={() => {}}
 				/>

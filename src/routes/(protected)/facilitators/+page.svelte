@@ -1,7 +1,5 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
 	import { Card, CardHeader, CardContent, CardTitle } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -22,7 +20,39 @@
 	let drawerOpen = $state(false);
 	let selectedFacilitator = $state<(typeof data.facilitators)[0] | null>(null);
 	let isEditMode = $state(false);
-	let searchQuery = $state(data.search || '');
+	let searchQuery = $state('');
+	let currentPage = $state(1);
+	const itemsPerPage = 10;
+
+	// Client-side filtering
+	const filteredFacilitators = $derived.by(() => {
+		const facilitators = data.facilitators || [];
+		if (!searchQuery.trim()) return facilitators;
+		const search = searchQuery.toLowerCase();
+		return facilitators.filter((f: any) =>
+			f.name?.toLowerCase().includes(search) ||
+			f.phone?.toLowerCase().includes(search) ||
+			f.email?.toLowerCase().includes(search)
+		);
+	});
+
+	// Client-side pagination
+	const paginatedFacilitators = $derived.by(() => {
+		const start = (currentPage - 1) * itemsPerPage;
+		const end = start + itemsPerPage;
+		return filteredFacilitators.slice(start, end);
+	});
+
+	const totalPages = $derived(Math.ceil(filteredFacilitators.length / itemsPerPage));
+
+	// Reset to page 1 when search changes
+	let prevSearchQuery = '';
+	$effect(() => {
+		if (searchQuery !== prevSearchQuery) {
+			currentPage = 1;
+			prevSearchQuery = searchQuery;
+		}
+	});
 
 	function openCreateDrawer() {
 		console.log('Abrindo drawer de criação');
@@ -43,21 +73,8 @@
 		isEditMode = false;
 	}
 
-	function handleSearch() {
-		const params = new URLSearchParams($page.url.searchParams);
-		if (searchQuery) {
-			params.set('search', searchQuery);
-		} else {
-			params.delete('search');
-		}
-		params.set('page', '1');
-		goto(`?${params.toString()}`);
-	}
-
 	function goToPage(pageNum: number) {
-		const params = new URLSearchParams($page.url.searchParams);
-		params.set('page', pageNum.toString());
-		goto(`?${params.toString()}`);
+		currentPage = pageNum;
 	}
 
 	function formatDate(date: Date | string | null) {
@@ -77,41 +94,21 @@
 
 	<!-- Search Bar -->
 	<div class="mb-6">
-		<div class="flex gap-2">
-			<div class="relative flex-1">
-				<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-				<Input
-					type="text"
-					placeholder="Buscar por nome, telefone ou email..."
-					bind:value={searchQuery}
-					onkeydown={(e) => e.key === 'Enter' && handleSearch()}
-					class="pl-10"
-				/>
-			</div>
-			<Button onclick={handleSearch}>Buscar</Button>
-			{#if data.search}
-				<Button
-					variant="outline"
-					onclick={() => {
-						searchQuery = '';
-						handleSearch();
-					}}
-				>
-					Limpar
-				</Button>
-			{/if}
+		<div class="relative">
+			<Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+			<Input
+				type="text"
+				placeholder="Buscar por nome, telefone ou email..."
+				bind:value={searchQuery}
+				class="pl-10"
+			/>
 		</div>
-		{#if data.search}
-			<p class="mt-2 text-sm text-muted-foreground">
-				Mostrando resultados para "{data.search}" - {data.pagination.totalItems} encontrado(s)
-			</p>
-		{/if}
 	</div>
 
 	<!-- Table -->
 	<Card>
 		<CardHeader>
-			<CardTitle>Facilitadores Cadastrados ({data.pagination.totalItems || 0})</CardTitle>
+			<CardTitle>Facilitadores Cadastrados ({filteredFacilitators.length})</CardTitle>
 		</CardHeader>
 		<CardContent>
 			<div class="rounded-md border">
@@ -128,8 +125,8 @@
 						</TableRow>
 					</TableHeader>
 					<TableBody>
-						{#if data.facilitators && data.facilitators.length > 0}
-							{#each data.facilitators as facilitator (facilitator.id)}
+						{#if paginatedFacilitators && paginatedFacilitators.length > 0}
+							{#each paginatedFacilitators as facilitator (facilitator.id)}
 								<TableRow>
 									<TableCell class="font-medium">{facilitator.id}</TableCell>
 									<TableCell>{facilitator.name}</TableCell>
@@ -179,30 +176,30 @@
 	</Card>
 
 	<!-- Pagination -->
-	{#if data.pagination.totalPages > 1}
+	{#if totalPages > 1}
 		<div class="mt-8 flex items-center justify-center gap-2">
 			<Button
 				variant="outline"
 				size="sm"
-				disabled={data.pagination.currentPage === 1}
-				onclick={() => goToPage(data.pagination.currentPage - 1)}
+				disabled={currentPage === 1}
+				onclick={() => goToPage(currentPage - 1)}
 			>
 				<ChevronLeft class="h-4 w-4" />
 				Anterior
 			</Button>
 
 			<div class="flex items-center gap-1">
-				{#each Array.from({ length: data.pagination.totalPages }, (_, i) => i + 1) as pageNum}
-					{#if pageNum === 1 || pageNum === data.pagination.totalPages || (pageNum >= data.pagination.currentPage - 1 && pageNum <= data.pagination.currentPage + 1)}
+				{#each Array.from({ length: totalPages }, (_, i) => i + 1) as pageNum}
+					{#if pageNum === 1 || pageNum === totalPages || (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)}
 						<Button
-							variant={pageNum === data.pagination.currentPage ? 'default' : 'outline'}
+							variant={pageNum === currentPage ? 'default' : 'outline'}
 							size="sm"
 							onclick={() => goToPage(pageNum)}
 							class="w-10"
 						>
 							{pageNum}
 						</Button>
-					{:else if pageNum === data.pagination.currentPage - 2 || pageNum === data.pagination.currentPage + 2}
+					{:else if pageNum === currentPage - 2 || pageNum === currentPage + 2}
 						<span class="px-2">...</span>
 					{/if}
 				{/each}
@@ -211,8 +208,8 @@
 			<Button
 				variant="outline"
 				size="sm"
-				disabled={data.pagination.currentPage === data.pagination.totalPages}
-				onclick={() => goToPage(data.pagination.currentPage + 1)}
+				disabled={currentPage === totalPages}
+				onclick={() => goToPage(currentPage + 1)}
 			>
 				Próxima
 				<ChevronRight class="h-4 w-4" />
@@ -220,12 +217,9 @@
 		</div>
 
 		<p class="mt-4 text-center text-sm text-muted-foreground">
-			Mostrando {(data.pagination.currentPage - 1) * data.pagination.itemsPerPage + 1} -
-			{Math.min(
-				data.pagination.currentPage * data.pagination.itemsPerPage,
-				data.pagination.totalItems
-			)}
-			de {data.pagination.totalItems} facilitadores
+			Mostrando {(currentPage - 1) * itemsPerPage + 1} -
+			{Math.min(currentPage * itemsPerPage, filteredFacilitators.length)}
+			de {filteredFacilitators.length} facilitadores
 		</p>
 	{/if}
 

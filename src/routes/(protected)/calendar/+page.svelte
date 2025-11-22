@@ -41,6 +41,7 @@
   let participantSearchTerm = $state('');
   let searchResults = $state<Array<{id: number, name: string}>>([]);
   let showParticipantDropdown = $state(false);
+  let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
   function openCreateDrawer() {
     resetForm();
@@ -123,23 +124,19 @@
     }
   });
 
-  $effect(() => {
-    if (isSignedUp && participantSearchTerm) {
-      searchParticipants();
-    }
-  });
-
   let displayName = $state('');
-
-  $effect(() => {
-    displayName = isSignedUp ? participantSearchTerm : name;
-  });
 
   function handleNameInput(value: string) {
     displayName = value;
     if (isSignedUp) {
       participantSearchTerm = value;
-      searchParticipants();
+      // Debounce the search to prevent freezing
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+      searchTimeout = setTimeout(() => {
+        searchParticipants();
+      }, 300);
     } else {
       name = value;
     }
@@ -165,8 +162,15 @@
     return filteredAppointments.slice(start, end);
   });
 
+  // Reset to page 1 when search or filter changes
+  let prevSearchTerm = '';
+  let prevShowSignedUp = false;
   $effect(() => {
-    currentPage = 1;
+    if (searchTerm !== prevSearchTerm || showSignedUp !== prevShowSignedUp) {
+      currentPage = 1;
+      prevSearchTerm = searchTerm;
+      prevShowSignedUp = showSignedUp;
+    }
   });
 </script>
 
@@ -393,7 +397,7 @@
                         {#each searchResults as participant}
                           <button
                             type="button"
-                            class="w-full px-4 py-2 text-left hover:bg-accent transition-colors"
+                            class="w-full px-4 py-2 text-left hover:bg-accent transition-colors text-gray-900 font-medium"
                             onclick={() => selectParticipant(participant)}
                           >
                             {participant.name}

@@ -1,16 +1,60 @@
 <script lang="ts">
-	import { Card, CardContent } from '$lib/components/ui/card';
+	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Sheet, SheetContent, SheetHeader, SheetTitle } from '$lib/components/ui/sheet';
+	import {
+		Table,
+		TableBody,
+		TableCell,
+		TableHead,
+		TableHeader,
+		TableRow
+	} from '$lib/components/ui/table';
 	import { enhance } from '$app/forms';
-	import { Plus, DollarSign, Check, X, Clock, RefreshCw } from 'lucide-svelte';
+	import { Plus, DollarSign, Check, X, Clock, RefreshCw, Search } from 'lucide-svelte';
+	import Pagination from '$lib/components/Pagination.svelte';
 
 	export let data;
 
 	let drawerOpen = false;
 	let selectedPayment: (typeof data.payments)[0] | null = null;
 	let isEditMode = false;
+	let searchTerm = '';
+	let statusFilter = 'all';
+	let currentPage = 1;
+	const itemsPerPage = 10;
+
+	$: filteredPayments = data.payments.filter((payment) => {
+		// Filter by status
+		const statusMatch = statusFilter === 'all' || payment.payment.status === statusFilter;
+
+		// Filter by search term (participant name or course name)
+		if (!searchTerm.trim()) return statusMatch;
+
+		const search = searchTerm.toLowerCase();
+		const nameMatch = payment.participantName?.toLowerCase().includes(search);
+		const courseMatch = payment.courseName?.toLowerCase().includes(search);
+
+		return statusMatch && (nameMatch || courseMatch);
+	});
+
+	$: paginatedPayments = (() => {
+		const start = (currentPage - 1) * itemsPerPage;
+		const end = start + itemsPerPage;
+		return filteredPayments.slice(start, end);
+	})();
+
+	// Reset to page 1 when filters change
+	let prevSearchTerm = '';
+	let prevStatusFilter = 'all';
+	$: {
+		if (searchTerm !== prevSearchTerm || statusFilter !== prevStatusFilter) {
+			currentPage = 1;
+			prevSearchTerm = searchTerm;
+			prevStatusFilter = statusFilter;
+		}
+	}
 
 	// Form states
 	let selectedCourseId = '';
@@ -131,91 +175,101 @@
 		</button>
 	</div>
 
-	<!-- Lista de Pagamentos -->
-	<div class="grid gap-4">
-		{#each data.payments as payment}
-			{@const StatusIcon = getStatusIcon(payment.payment.status)}
-			<Card class="transition-shadow hover:shadow-lg">
-				<CardContent class="p-6">
-					<div class="flex items-start justify-between">
-						<div class="flex-1">
-							<div class="mb-2 flex items-center gap-3">
-								<DollarSign class="h-5 w-5 text-primary" />
-								<h3 class="text-lg font-semibold">{payment.participantName || 'Participante'}</h3>
-								{#if payment.participantPhone}
-									<span class="text-sm text-muted-foreground">({payment.participantPhone})</span>
-								{/if}
-								<span
-									class={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(payment.payment.status)}`}
-								>
-									<StatusIcon class="h-3 w-3" />
-									{getStatusText(payment.payment.status)}
-								</span>
-							</div>
+	<Card>
+		<CardHeader>
+			<CardTitle>Pagamentos ({filteredPayments.length})</CardTitle>
+		</CardHeader>
+		<CardContent>
+			<!-- Search and Filter -->
+			<div class="mb-4 flex gap-4">
+				<div class="relative flex-1">
+					<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+					<Input
+						type="text"
+						placeholder="Buscar por participante ou curso..."
+						bind:value={searchTerm}
+						class="pl-10"
+					/>
+				</div>
+				<select
+					bind:value={statusFilter}
+					class="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+				>
+					<option value="all">Todos</option>
+					<option value="paid">Pago</option>
+					<option value="pending">Pendente</option>
+					<option value="cancelled">Cancelado</option>
+					<option value="refunded">Reembolso</option>
+				</select>
+			</div>
 
-							<div class="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
-								<div>
-									<p class="text-sm text-muted-foreground">Curso</p>
-									<p class="font-medium">{payment.courseName || 'N/A'}</p>
-								</div>
-								<div>
-									<p class="text-sm text-muted-foreground">Valor Original</p>
-									<p class="font-medium">{formatCurrency(payment.payment.amount)}</p>
-								</div>
-								{#if payment.payment.discount && payment.payment.discount > 0}
+			{#if filteredPayments.length === 0 && (searchTerm || statusFilter !== 'all')}
+				<p class="text-sm text-muted-foreground text-center py-8">
+					Nenhum pagamento encontrado
+				</p>
+			{:else if paginatedPayments.length > 0}
+				<Table>
+					<TableHeader>
+						<TableRow>
+							<TableHead>Participante</TableHead>
+							<TableHead>Curso</TableHead>
+							<TableHead>Status</TableHead>
+							<TableHead>Valor Final</TableHead>
+							<TableHead>Método</TableHead>
+							<TableHead>Data</TableHead>
+							<TableHead class="text-right">Ações</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{#each paginatedPayments as payment}
+							<TableRow>
+								<TableCell>
 									<div>
-										<p class="text-sm text-muted-foreground">Desconto</p>
-										<p class="font-medium text-green-600">
-											-{formatCurrency(payment.payment.discount)}
-										</p>
+										<p class="font-medium">{payment.participantName || 'Participante'}</p>
+										{#if payment.participantPhone}
+											<p class="text-sm text-muted-foreground">{payment.participantPhone}</p>
+										{/if}
 									</div>
-								{/if}
-								<div>
-									<p class="text-sm text-muted-foreground">Valor Final</p>
-									<p class="font-bold text-primary">
-										{formatCurrency(payment.payment.finalAmount)}
-									</p>
-								</div>
-								{#if payment.payment.paymentMethod}
-									<div>
-										<p class="text-sm text-muted-foreground">Método</p>
-										<p class="font-medium capitalize">
-											{payment.payment.paymentMethod === 'free'
-												? 'Gratuito'
-												: payment.payment.paymentMethod.replace('_', ' ')}
-										</p>
-									</div>
-								{/if}
-								<div>
-									<p class="text-sm text-muted-foreground">Data</p>
-									<p class="font-medium">{formatDate(payment.payment.createdAt)}</p>
-								</div>
-							</div>
+								</TableCell>
+								<TableCell>{payment.courseName || '-'}</TableCell>
+								<TableCell>
+									<span
+										class={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusColor(payment.payment.status)}`}
+									>
+										{getStatusText(payment.payment.status)}
+									</span>
+								</TableCell>
+								<TableCell class="font-medium">{formatCurrency(payment.payment.finalAmount)}</TableCell>
+								<TableCell class="capitalize">
+									{#if payment.payment.paymentMethod}
+										{payment.payment.paymentMethod === 'free'
+											? 'Gratuito'
+											: payment.payment.paymentMethod.replace('_', ' ')}
+									{:else}
+										-
+									{/if}
+								</TableCell>
+								<TableCell>{formatDate(payment.payment.createdAt)}</TableCell>
+								<TableCell class="text-right">
+									<Button variant="outline" size="sm" on:click={() => openEditDrawer(payment)}>
+										Gerenciar
+									</Button>
+								</TableCell>
+							</TableRow>
+						{/each}
+					</TableBody>
+				</Table>
+				<Pagination
+					bind:currentPage
+					totalItems={filteredPayments.length}
+					{itemsPerPage}
+					onPageChange={() => {}}
+				/>
+			{/if}
+		</CardContent>
+	</Card>
 
-							{#if payment.payment.notes}
-								<div class="mt-3 rounded-md bg-muted p-3">
-									<p class="text-sm text-muted-foreground">Observações:</p>
-									<p class="text-sm">{payment.payment.notes}</p>
-								</div>
-							{/if}
-						</div>
-
-						<div class="ml-4 flex flex-col gap-2">
-							<button
-								type="button"
-								on:click={() => openEditDrawer(payment)}
-								class="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
-							>
-								Gerenciar
-							</button>
-						</div>
-					</div>
-				</CardContent>
-			</Card>
-		{/each}
-	</div>
-
-	{#if data.payments.length === 0}
+	{#if data.payments.length === 0 && !searchTerm && statusFilter === 'all'}
 		<Card class="mt-8">
 			<CardContent class="flex flex-col items-center justify-center py-12">
 				<DollarSign class="mb-4 h-16 w-16 text-muted-foreground" />
