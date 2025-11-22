@@ -1,4 +1,3 @@
-// src/routes/payments/+page.server.ts
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { payments, participants, courseEnrollments } from '$lib/server/db/schema';
@@ -7,23 +6,31 @@ import { eq, desc, and } from 'drizzle-orm';
 
 export const load: PageServerLoad = async () => {
   try {
-    const allPayments = await db
-      .select({
-        payment: payments,
+    const [allPayments, allCourses, allParticipants] = await Promise.all([
+      db
+        .select({
+          payment: payments,
+          courseName: courses.courseName,
+          participantName: participants.name,
+          participantPhone: participants.phone,
+        })
+        .from(payments)
+        .leftJoin(courses, eq(payments.courseId, courses.id))
+        .leftJoin(participants, eq(payments.participantId, participants.id))
+        .orderBy(desc(payments.createdAt)),
+
+      db.select({
+        id: courses.id,
         courseName: courses.courseName,
-        participantName: participants.name,
-        participantPhone: participants.phone,
-      })
-      .from(payments)
-      .leftJoin(courses, eq(payments.courseId, courses.id))
-      .leftJoin(participants, eq(payments.participantId, participants.id))
-      .orderBy(desc(payments.createdAt));
+        price: courses.price
+      }).from(courses),
 
-    // Buscar cursos para o dropdown
-    const allCourses = await db.select().from(courses);
-
-    // Buscar participantes para o dropdown
-    const allParticipants = await db.select().from(participants);
+      db.select({
+        id: participants.id,
+        name: participants.name,
+        phone: participants.phone
+      }).from(participants)
+    ]);
 
     return {
       payments: allPayments,
@@ -52,17 +59,15 @@ export const actions: Actions = {
     // Calculate discount amount based on percentage
     const discount = (amount * discountPercentage) / 100;
     const finalAmount = amount - discount;
-    
+
     const paymentMethodRaw = data.get('paymentMethod') as string;
     const notes = data.get('notes') as string | null;
 
-    // Validar paymentMethod
     const validMethods = ['pix', 'credit_card', 'debit_card', 'bank_transfer', 'boleto', 'cash', 'free'];
     const paymentMethod = paymentMethodRaw && validMethods.includes(paymentMethodRaw)
       ? paymentMethodRaw as 'pix' | 'credit_card' | 'debit_card' | 'bank_transfer' | 'boleto' | 'cash' | 'free'
       : null;
 
-    // If payment method is 'free', status is automatically 'paid'
     const status = paymentMethod === 'free' ? 'paid' : 'pending';
     const paidAt = paymentMethod === 'free' ? new Date().toISOString() : null;
 
@@ -80,7 +85,6 @@ export const actions: Actions = {
       paidAt
     }).returning();
 
-    // If free (paid), automatically enroll
     if (status === 'paid') {
        const existingEnrollment = await db
         .select()
@@ -118,12 +122,10 @@ export const actions: Actions = {
       updatedAt: new Date().toISOString()
     };
 
-    // Se marcado como pago, registrar a data
     if (status === 'paid') {
       updateData.paidAt = new Date().toISOString();
     }
 
-    // Se cancelado, registrar a data
     if (status === 'cancelled') {
       updateData.cancelledAt = new Date().toISOString();
     }

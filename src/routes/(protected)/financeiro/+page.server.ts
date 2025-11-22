@@ -1,4 +1,3 @@
-// src/routes/financeiro/+page.server.ts
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { payments, courses, participants, courseEnrollments } from '$lib/server/db/schema';
@@ -40,13 +39,11 @@ export const load: PageServerLoad = async () => {
       stats.totalReembolsado += amount;
     }
 
-    // Contar como gratuito se finalAmount = 0 ou paymentMethod = 'free'
     if (amount === 0 || payment.paymentMethod === 'free') {
       stats.totalGratuito += 1;
     }
   });
 
-  // 3. Receita por curso
   const receitaPorCurso: Record<string, { courseName: string; total: number; count: number }> = {};
 
   allPayments.forEach(({ payment, courseName }) => {
@@ -67,40 +64,26 @@ export const load: PageServerLoad = async () => {
 
   const receitaPorCursoArray = Object.values(receitaPorCurso).sort((a, b) => b.total - a.total);
 
-  const allCourses = await db.select().from(courses);
-
-  const cursosComEstatisticas = await Promise.all(
-    allCourses.map(async (course) => {
-      const enrollments = await db
-        .select()
-        .from(courseEnrollments)
-        .where(eq(courseEnrollments.courseId, course.id));
-
-      // Pagamentos deste curso
-      const coursePayments = await db
-        .select()
-        .from(payments)
-        .where(and(
-          eq(payments.courseId, course.id),
-          eq(payments.status, 'paid')
-        ));
-
-      const totalMatriculas = enrollments.length;
-      const pagantes = coursePayments.filter(p => (p.finalAmount || 0) > 0 && p.paymentMethod !== 'free').length;
-      const naoPagantes = coursePayments.filter(p => (p.finalAmount || 0) === 0 || p.paymentMethod === 'free').length;
-      const semPagamento = totalMatriculas - coursePayments.length;
-
-      return {
-        id: course.id,
-        courseName: course.courseName,
-        totalMatriculas,
-        pagantes,
-        naoPagantes,
-        semPagamento,
-        receitaTotal: coursePayments.reduce((sum, p) => sum + (p.finalAmount || 0), 0),
-      };
+  const cursosComEstatisticas = await db
+    .select({
+      id: courses.id,
+      courseName: courses.courseName,
+      totalMatriculas: sql<number>`count(distinct ${courseEnrollments.id})::int`,
+      pagantes: sql<number>`count(distinct case when ${payments.status} = 'paid' and ${payments.finalAmount} > 0 and ${payments.paymentMethod} != 'free' then ${payments.id} end)::int`,
+      naoPagantes: sql<number>`count(distinct case when ${payments.status} = 'paid' and (${payments.finalAmount} = 0 or ${payments.paymentMethod} = 'free') then ${payments.id} end)::int`,
+      receitaTotal: sql<number>`coalesce(sum(case when ${payments.status} = 'paid' then ${payments.finalAmount} else 0 end), 0)::float`
     })
-  );
+    .from(courses)
+    .leftJoin(courseEnrollments, eq(courses.id, courseEnrollments.courseId))
+    .leftJoin(payments, and(
+      eq(courses.id, payments.courseId),
+      eq(payments.status, 'paid')
+    ))
+    .groupBy(courses.id)
+    .then(results => results.map(r => ({
+      ...r,
+      semPagamento: r.totalMatriculas - (r.pagantes + r.naoPagantes)
+    })));
 
   return {
     payments: allPayments,

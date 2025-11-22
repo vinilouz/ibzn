@@ -8,31 +8,38 @@ import { requireAuth } from '$lib/server/middleware/auth';
 
 export const load = async () => {
 	try {
-		const enrollments = await db
-			.select({
-				id: courseEnrollments.id,
-				participantId: courseEnrollments.participantId,
-				courseId: courseEnrollments.courseId,
-				status: courseEnrollments.status,
-				amount: courseEnrollments.amount,
-				enrolledAt: courseEnrollments.enrolledAt,
-				cancelledAt: courseEnrollments.cancelledAt,
-				notes: courseEnrollments.notes,
-				courseName: courses.courseName,
-				participantName: participants.name,
-				participantPhone: participants.phone
-			})
-			.from(courseEnrollments)
-			.leftJoin(courses, eq(courseEnrollments.courseId, courses.id))
-			.leftJoin(participants, eq(courseEnrollments.participantId, participants.id))
-			.orderBy(desc(courseEnrollments.enrolledAt));
+		const [enrollments, allCourses, allParticipants] = await Promise.all([
+			db
+				.select({
+					id: courseEnrollments.id,
+					participantId: courseEnrollments.participantId,
+					courseId: courseEnrollments.courseId,
+					status: courseEnrollments.status,
+					amount: courseEnrollments.amount,
+					enrolledAt: courseEnrollments.enrolledAt,
+					cancelledAt: courseEnrollments.cancelledAt,
+					notes: courseEnrollments.notes,
+					courseName: courses.courseName,
+					participantName: participants.name,
+					participantPhone: participants.phone
+				})
+				.from(courseEnrollments)
+				.leftJoin(courses, eq(courseEnrollments.courseId, courses.id))
+				.leftJoin(participants, eq(courseEnrollments.participantId, participants.id))
+				.orderBy(desc(courseEnrollments.enrolledAt)),
 
-		const allCourses = await db.select().from(courses);
-		const allParticipants = await db.select({
-			id: participants.id,
-			name: participants.name,
-			phone: participants.phone
-		}).from(participants);
+			db.select({
+				id: courses.id,
+				courseName: courses.courseName,
+				price: courses.price
+			}).from(courses),
+
+			db.select({
+				id: participants.id,
+				name: participants.name,
+				phone: participants.phone
+			}).from(participants)
+		]);
 
 		return {
 			enrollments,
@@ -41,7 +48,7 @@ export const load = async () => {
 		};
 	} catch (error) {
 		logger.error('Erro ao carregar matrículas:', error);
-		return { enrollments: [], courses: [], users: [] };
+		return { enrollments: [], courses: [], participants: [] };
 	}
 };
 

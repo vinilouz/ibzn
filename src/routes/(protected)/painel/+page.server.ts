@@ -8,57 +8,40 @@ import { fail } from '@sveltejs/kit';
 export const load: PageServerLoad = async (event) => {
 	const user = await requireAuth(event);
 
-	const allRooms = await db.select().from(rooms);
-	const allEvents = await db.select().from(events);
+	const [allRooms, allEvents, statsResult] = await Promise.all([
+		db.select().from(rooms),
+		db.select().from(events),
+		Promise.all([
+			db.select({
+				participantCount: count(),
+				facilitatorCount: sql<number>`(SELECT COUNT(*) FROM ${facilitators})`,
+				roomCount: sql<number>`(SELECT COUNT(*) FROM ${rooms})`,
+				courseCount: sql<number>`(SELECT COUNT(*) FROM ${courses})`
+			}).from(participants),
 
-	const [participantCount] = await db.select({ count: count() }).from(participants);
-	const [facilitatorCount] = await db.select({ count: count() }).from(facilitators);
-	const [roomCount] = await db.select({ count: count() }).from(rooms);
-	const [courseCount] = await db.select({ count: count() }).from(courses);
+			db.select({
+				paidPayments: sql<number>`COUNT(*) FILTER (WHERE ${payments.status} = 'paid')`,
+				pendingPayments: sql<number>`COUNT(*) FILTER (WHERE ${payments.status} = 'pending')`,
+				paidTotal: sql<number>`COALESCE(SUM(${payments.finalAmount}) FILTER (WHERE ${payments.status} = 'paid'), 0)`,
+				pendingTotal: sql<number>`COALESCE(SUM(${payments.finalAmount}) FILTER (WHERE ${payments.status} = 'pending'), 0)`
+			}).from(payments),
 
-	// Buscar pagamentos pagos e pendentes (quantidade)
-	const [paidPayments] = await db
-		.select({ count: count() })
-		.from(payments)
-		.where(eq(payments.status, 'paid'));
-	const [pendingPayments] = await db
-		.select({ count: count() })
-		.from(payments)
-		.where(eq(payments.status, 'pending'));
+			db.select({
+				activeEnrollments: sql<number>`COUNT(*) FILTER (WHERE ${courseEnrollments.status} = 'active')`,
+				completedEnrollments: sql<number>`COUNT(*) FILTER (WHERE ${courseEnrollments.status} = 'completed')`,
+				cancelledEnrollments: sql<number>`COUNT(*) FILTER (WHERE ${courseEnrollments.status} = 'cancelled')`,
+				droppedEnrollments: sql<number>`COUNT(*) FILTER (WHERE ${courseEnrollments.status} = 'dropped')`,
+				pendingEnrollments: sql<number>`COUNT(*) FILTER (WHERE ${courseEnrollments.status} = 'pending')`
+			}).from(courseEnrollments)
+		])
+	]);
 
-	// Buscar valores totais pagos e pendentes
-	const [paidTotal] = await db
-		.select({ total: sql<number>`cast(coalesce(sum(${payments.finalAmount}), 0) as float)` })
-		.from(payments)
-		.where(eq(payments.status, 'paid'));
-	const [pendingTotal] = await db
-		.select({ total: sql<number>`cast(coalesce(sum(${payments.finalAmount}), 0) as float)` })
-		.from(payments)
-		.where(eq(payments.status, 'pending'));
-
-	// Buscar matrículas por status
-	const [activeEnrollments] = await db
-		.select({ count: count() })
-		.from(courseEnrollments)
-		.where(eq(courseEnrollments.status, 'active'));
-	const [completedEnrollments] = await db
-		.select({ count: count() })
-		.from(courseEnrollments)
-		.where(eq(courseEnrollments.status, 'completed'));
-	const [cancelledEnrollments] = await db
-		.select({ count: count() })
-		.from(courseEnrollments)
-		.where(eq(courseEnrollments.status, 'cancelled'));
-	const [droppedEnrollments] = await db
-		.select({ count: count() })
-		.from(courseEnrollments)
-		.where(eq(courseEnrollments.status, 'dropped'));
-	const [pendingEnrollments] = await db
-		.select({ count: count() })
-		.from(courseEnrollments)
-		.where(eq(courseEnrollments.status, 'pending'));
-
-	// Buscar cursos com informações do facilitador e contagem de participantes
+	const [basicCounts, paymentStats, enrollmentStats] = statsResult;
+	const stats = {
+		...basicCounts[0],
+		...paymentStats[0],
+		...enrollmentStats[0]
+	};
 	const coursesWithDetails = await db
 		.select({
 			id: courses.id,
@@ -82,19 +65,19 @@ export const load: PageServerLoad = async (event) => {
 		rooms: allRooms,
 		courses: coursesWithDetails,
 		events: allEvents,
-		totalParticipants: participantCount?.count || 0,
-		totalFacilitators: facilitatorCount?.count || 0,
-		totalRooms: roomCount?.count || 0,
-		totalCourses: courseCount?.count || 0,
-		paidPayments: paidPayments?.count || 0,
-		pendingPayments: pendingPayments?.count || 0,
-		paidTotal: paidTotal?.total || 0,
-		pendingTotal: pendingTotal?.total || 0,
-		activeEnrollments: activeEnrollments?.count || 0,
-		completedEnrollments: completedEnrollments?.count || 0,
-		cancelledEnrollments: cancelledEnrollments?.count || 0,
-		droppedEnrollments: droppedEnrollments?.count || 0,
-		pendingEnrollments: pendingEnrollments?.count || 0
+		totalParticipants: Number(stats.participantCount) || 0,
+		totalFacilitators: Number(stats.facilitatorCount) || 0,
+		totalRooms: Number(stats.roomCount) || 0,
+		totalCourses: Number(stats.courseCount) || 0,
+		paidPayments: Number(stats.paidPayments) || 0,
+		pendingPayments: Number(stats.pendingPayments) || 0,
+		paidTotal: Number(stats.paidTotal) || 0,
+		pendingTotal: Number(stats.pendingTotal) || 0,
+		activeEnrollments: Number(stats.activeEnrollments) || 0,
+		completedEnrollments: Number(stats.completedEnrollments) || 0,
+		cancelledEnrollments: Number(stats.cancelledEnrollments) || 0,
+		droppedEnrollments: Number(stats.droppedEnrollments) || 0,
+		pendingEnrollments: Number(stats.pendingEnrollments) || 0
 	};
 };
 

@@ -1,4 +1,3 @@
-// src/routes/participants/+page.server.ts
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { participants, courseEnrollments, courses } from '$lib/server/db/schema';
@@ -11,7 +10,7 @@ export const load: PageServerLoad = async ({ url }) => {
   const offset = (page - 1) * limit;
 
   let query = db.select().from(participants);
-  
+
   if (search) {
     query = query.where(
       or(
@@ -24,27 +23,31 @@ export const load: PageServerLoad = async ({ url }) => {
 
   const allParticipants = await query.limit(limit).offset(offset);
 
-  const allCourses = await db.select().from(courses);
+  const participantIds = allParticipants.map(p => p.id);
 
-  const enrollments = await db
-    .select({
-      enrollmentId: courseEnrollments.id,
-      participantId: courseEnrollments.participantId,
-      courseId: courseEnrollments.courseId,
-      courseName: courses.courseName,
-      enrolledAt: courseEnrollments.enrolledAt,
-      status: courseEnrollments.status,
-      amount: courseEnrollments.amount,
-    })
-    .from(courseEnrollments)
-    .leftJoin(courses, eq(courseEnrollments.courseId, courses.id));
+  const [allCourses, enrollments] = await Promise.all([
+    db.select().from(courses),
+    participantIds.length > 0
+      ? db
+          .select({
+            enrollmentId: courseEnrollments.id,
+            participantId: courseEnrollments.participantId,
+            courseId: courseEnrollments.courseId,
+            courseName: courses.courseName,
+            enrolledAt: courseEnrollments.enrolledAt,
+            status: courseEnrollments.status,
+            amount: courseEnrollments.amount,
+          })
+          .from(courseEnrollments)
+          .leftJoin(courses, eq(courseEnrollments.courseId, courses.id))
+          .where(sql`${courseEnrollments.participantId} IN ${participantIds}`)
+      : []
+  ]);
 
   const participantsWithCourses = allParticipants.map(participant => ({
     ...participant,
     courses: enrollments.filter(e => e.participantId === participant.id)
   }));
-
-  // Get total count for pagination
   const countQuery = search
     ? db.select({ count: sql<number>`count(*)` }).from(participants).where(
         or(
