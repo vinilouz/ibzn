@@ -8,7 +8,7 @@
 	let { children, data } = $props();
 	const user = data.user;
 
-	const sidebarItems = $derived([
+	const allSidebarItems = [
 		{
 			title: "Dashboard",
 			url: "/painel",
@@ -47,14 +47,22 @@
 		{
 			title: "Financeiro",
 			url: "/financeiro",
-			iconKey: "financeiro"
+			iconKey: "financeiro",
+			adminOnly: true
 		},
 		{
 			title: "Pagamentos",
 			url: "/payments",
 			iconKey: "pagamentos"
 		}
-	]);
+	];
+
+	// Filtrar itens da sidebar baseado na role
+	const sidebarItems = $derived(
+		user?.role === 'admin' 
+			? allSidebarItems 
+			: allSidebarItems.filter(item => !item.adminOnly)
+	);
 </script>
 
 <ModeWatcher />
@@ -74,12 +82,9 @@
 					{#if user?.role}
 						<div class="px-3 py-1 rounded-full text-xs font-medium {
 							user.role === 'admin' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-							user.role === 'manager' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-							'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+							'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
 						}">
-							{user.role === 'admin' ? ' Admin' :
-							 user.role === 'manager' ? ' Manager' :
-							 user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+							{user.role === 'admin' ? 'Admin' : 'Manager'}
 						</div>
 					{/if}
 

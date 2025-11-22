@@ -17,7 +17,7 @@ export const auth = betterAuth({
     additionalFields: {
       role: {
         type: 'string',
-        defaultValue: 'user',
+        defaultValue: 'manager',
         required: true
       }
     }
@@ -76,12 +76,6 @@ export const auth = betterAuth({
         throw error;
       }
     },
-  },
-  socialProviders: {
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!
-    }
   },
   secret: process.env.BETTER_AUTH_SECRET!
 });

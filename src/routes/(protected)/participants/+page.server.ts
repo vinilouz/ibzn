@@ -45,7 +45,6 @@ export const actions: Actions = {
     const address = data.get('address') as string | null;
     const role = data.get('role') as string | null;
     const birthdate = data.get('birthdate') as string | null;
-
     await db.insert(participants).values({
       name,
       phone,

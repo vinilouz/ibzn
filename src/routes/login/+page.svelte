@@ -23,7 +23,7 @@
 			<img
 				src="/images/login-bg.png"
 				alt="Login background"
-				class="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+				class="absolute inset-0 h-full w-full object-cover"
 			/>
 			<div class="absolute inset-0 bg-black/20"></div>
 		</div>

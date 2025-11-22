@@ -3,8 +3,18 @@ import { db } from '$lib/server/db';
 import { payments, courses, participants, courseEnrollments } from '$lib/server/db/schema';
 import { eq, sql, and } from 'drizzle-orm';
 import { cache } from '$lib/server/cache';
+import { requireAuth } from '$lib/server/middleware/auth';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async (event) => {
+  const user = await requireAuth(event);
+  
+  // Apenas admin pode acessar financeiro
+  if (user.role !== 'admin') {
+    return {
+      unauthorized: true,
+      user
+    };
+  }
   return cache.get('financeiro:dashboard', async () => {
     const allPayments = await db
     .select({

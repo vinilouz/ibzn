@@ -2,9 +2,11 @@
   import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '$lib/components/ui/card';
   import { Badge } from '$lib/components/ui/badge';
   import { Input } from '$lib/components/ui/input';
-  import { DollarSign, Clock, CheckCircle, Gift, AlertCircle, Search } from 'lucide-svelte';
+  import { Button } from '$lib/components/ui/button';
+  import { DollarSign, Clock, CheckCircle, Gift, AlertCircle, Search, ShieldAlert } from 'lucide-svelte';
   import Pagination from '$lib/components/Pagination.svelte';
   import type { PageData } from './$types';
+  import { goto } from '$app/navigation';
 
   let { data }: { data: PageData } = $props();
 
@@ -19,29 +21,7 @@
     }).format(value);
   }
 
-  function formatDate(dateString: string) {
-    return new Date(dateString).toLocaleDateString('pt-BR');
-  }
 
-  function getStatusColor(status: string) {
-    switch (status) {
-      case 'paid': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'refunded': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-    }
-  }
-
-  function getStatusText(status: string) {
-    switch (status) {
-      case 'paid': return 'Pago';
-      case 'pending': return 'Pendente';
-      case 'cancelled': return 'Cancelado';
-      case 'refunded': return 'Reembolsado';
-      default: return status;
-    }
-  }
 
   const filteredCursos = $derived.by(() => {
     const cursos = data.cursosComEstatisticas || [];
@@ -63,14 +43,46 @@
   });
 </script>
 
-<div class="container mx-auto p-6 max-w-7xl">
-  <!-- Header -->
-  <div class="mb-8">
-    <h1 class="text-3xl font-bold">Dashboard Financeiro</h1>
-    <p class="text-muted-foreground mt-1">Visão geral de receitas e pagamentos</p>
+{#if data.unauthorized}
+  <!-- Mensagem de Acesso Negado -->
+  <div class="flex items-center justify-center min-h-[calc(100vh-200px)]">
+    <Card class="w-full max-w-md border-destructive">
+      <CardHeader>
+        <div class="flex flex-col items-center gap-4">
+          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+            <ShieldAlert class="h-8 w-8 text-destructive" />
+          </div>
+          <div class="text-center">
+            <CardTitle class="text-2xl text-destructive">Acesso Negado</CardTitle>
+            <CardDescription class="mt-2">
+              Você não possui permissão para acessar esta página
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent class="space-y-4">
+        <div class="rounded-lg bg-destructive/10 border border-destructive/20 p-4">
+          <p class="text-sm text-center">
+            Esta área é restrita apenas para <strong>Administradores</strong>.
+          </p>
+        </div>
+        <Button 
+          class="w-full" 
+          onclick={() => goto('/painel')}
+        >
+          Voltar ao Dashboard
+        </Button>
+      </CardContent>
+    </Card>
   </div>
+{:else}
+  <div class="container mx-auto p-6 max-w-7xl">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold">Dashboard Financeiro</h1>
+      <p class="text-muted-foreground mt-1">Visão geral de receitas e pagamentos</p>
+    </div>
 
-  <!-- Cards de Estatísticas -->
+    <!-- Cards de Estatísticas -->
   <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
     <!-- Total Receita -->
     <Card>
@@ -79,7 +91,7 @@
         <DollarSign class="h-4 w-4 text-green-600" />
       </CardHeader>
       <CardContent>
-        <div class="text-2xl font-bold text-green-600">{formatCurrency(data.stats.totalReceita)}</div>
+        <div class="text-2xl font-bold text-green-600">{formatCurrency(data.stats?.totalReceita ?? 0)}</div>
         <p class="text-xs text-muted-foreground mt-1">Pagamentos confirmados</p>
       </CardContent>
     </Card>
@@ -91,7 +103,7 @@
         <Clock class="h-4 w-4 text-yellow-600" />
       </CardHeader>
       <CardContent>
-        <div class="text-2xl font-bold text-yellow-600">{formatCurrency(data.stats.totalPendente)}</div>
+        <div class="text-2xl font-bold text-yellow-600">{formatCurrency(data.stats?.totalPendente ?? 0)}</div>
         <p class="text-xs text-muted-foreground mt-1">Aguardando pagamento</p>
       </CardContent>
     </Card>
@@ -103,7 +115,7 @@
         <Gift class="h-4 w-4 text-blue-600" />
       </CardHeader>
       <CardContent>
-        <div class="text-2xl font-bold text-blue-600">{data.stats.totalGratuito}</div>
+        <div class="text-2xl font-bold text-blue-600">{data.stats?.totalGratuito ?? 0}</div>
         <p class="text-xs text-muted-foreground mt-1">Participantes com 100% desconto</p>
       </CardContent>
     </Card>
@@ -115,7 +127,7 @@
         <CheckCircle class="h-4 w-4 text-primary" />
       </CardHeader>
       <CardContent>
-        <div class="text-2xl font-bold">{formatCurrency(data.stats.totalPago)}</div>
+        <div class="text-2xl font-bold">{formatCurrency(data.stats?.totalPago ?? 0)}</div>
         <p class="text-xs text-muted-foreground mt-1">Total arrecadado</p>
       </CardContent>
     </Card>
@@ -129,7 +141,7 @@
         <CardDescription>Cursos com maior arrecadação</CardDescription>
       </CardHeader>
       <CardContent>
-        {#if data.receitaPorCurso.length === 0}
+        {#if !data.receitaPorCurso || data.receitaPorCurso.length === 0}
           <p class="text-sm text-muted-foreground">Nenhum pagamento registrado ainda</p>
         {:else}
           <div class="space-y-4">
@@ -156,7 +168,7 @@
         <CardDescription>Pagantes vs Não-Pagantes</CardDescription>
       </CardHeader>
       <CardContent>
-        {#if data.cursosComEstatisticas.length === 0}
+        {#if !data.cursosComEstatisticas || data.cursosComEstatisticas.length === 0}
           <p class="text-sm text-muted-foreground">Nenhum curso cadastrado ainda</p>
         {:else}
           <div class="mb-4">
@@ -211,5 +223,6 @@
         {/if}
       </CardContent>
     </Card>
+    </div>
   </div>
-</div>
+{/if}
