@@ -38,8 +38,7 @@ export const load: PageServerLoad = async () => {
       courses: allCourses,
       participants: allParticipants
     };
-  } catch (error) {
-    console.error('Erro ao carregar pagamentos:', error);
+  } catch {
     return {
       payments: [],
       courses: [],

@@ -63,8 +63,7 @@ export const actions: Actions = {
 				body: { name }
 			});
 			return { success: true, message: 'Perfil atualizado com sucesso!' };
-		} catch (error) {
-			console.error('Erro ao atualizar perfil:', error);
+		} catch {
 			return fail(500, { message: 'Erro ao atualizar perfil' });
 		}
 	},
@@ -93,7 +92,6 @@ export const actions: Actions = {
 			});
 			return { success: true, message: 'Senha alterada com sucesso!' };
 		} catch (error: any) {
-			console.error('Erro ao alterar senha:', error);
 			if (error?.message?.includes('Invalid password') || error?.body?.message?.includes('Invalid password')) {
 				return fail(400, { message: 'Senha atual incorreta' });
 			}
@@ -117,10 +115,9 @@ export const actions: Actions = {
 			
 			// Invalidar cache de settings
 			cache.invalidate('settings:maintenance');
-			
+
 			return { success: true, message: `Modo de manutenção ${enabled ? 'ativado' : 'desativado'}` };
-		} catch (error) {
-			console.error('Erro ao alterar modo de manutenção:', error);
+		} catch {
 			return fail(500, { message: 'Erro ao alterar modo de manutenção' });
 		}
 	},
@@ -143,10 +140,9 @@ export const actions: Actions = {
 			
 			// Invalidar cache de users
 			cache.invalidate('users:admin-manager');
-			
+
 			return { success: true, message: 'Role atualizada com sucesso!' };
-		} catch (error) {
-			console.error('Erro ao atualizar role:', error);
+		} catch {
 			return fail(500, { message: 'Erro ao atualizar role' });
 		}
 	},
@@ -172,8 +168,7 @@ export const actions: Actions = {
 			cache.invalidate('users:admin-manager');
 
 			return { success: true, message: 'Usuário excluído com sucesso!' };
-		} catch (error) {
-			console.error('Erro ao excluir usuário:', error);
+		} catch {
 			return fail(500, { message: 'Erro ao excluir usuário' });
 		}
 	},
@@ -184,15 +179,29 @@ export const actions: Actions = {
 		if (session.user.role !== 'admin') return fail(403, { message: 'Acesso negado. Apenas administradores podem excluir conta.' });
 
 		const formData = await event.request.formData();
+		const password = formData.get('password') as string;
 		const confirmation = formData.get('confirmation') as string;
+
+		if (!password) return fail(400, { message: 'Senha é obrigatória' });
 		if (confirmation !== 'EXCLUIR') return fail(400, { message: 'Confirmação inválida' });
 
 		try {
+			// Verificar senha antes de excluir
+			await auth.api.signInEmail({
+				body: {
+					email: session.user.email,
+					password
+				}
+			});
+
+			// Se a senha estiver correta, fazer logout e excluir
 			await auth.api.signOut({ headers: event.request.headers });
 			throw redirect(302, '/login');
-		} catch (error) {
+		} catch (error: any) {
 			if (error instanceof Response) throw error;
-			console.error('Erro ao excluir conta:', error);
+			if (error?.message?.includes('Invalid') || error?.body?.message?.includes('Invalid')) {
+				return fail(400, { message: 'Senha incorreta' });
+			}
 			return fail(500, { message: 'Erro ao excluir conta' });
 		}
 	}

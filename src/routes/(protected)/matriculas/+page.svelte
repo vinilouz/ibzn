@@ -59,12 +59,10 @@
 	const filteredEnrollments = $derived.by(() => {
 		let enrollments = data.enrollments || [];
 
-		// Filter by status
 		if (statusFilter !== 'all') {
 			enrollments = enrollments.filter((e: any) => e.status === statusFilter);
 		}
 
-		// Filter by search term (participant name or course name)
 		if (searchTerm.trim()) {
 			const search = searchTerm.toLowerCase();
 			enrollments = enrollments.filter((e: any) =>
@@ -186,7 +184,6 @@
 		return filteredEnrollments.slice(start, end);
 	});
 
-	// Reset to page 1 when filters change
 	let prevSearchTerm = '';
 	let prevStatusFilter = 'all';
 	$effect(() => {
@@ -357,14 +354,14 @@
 												Editar
 											</Button>
 
-											<form 
-												method="POST" 
-												action="?/delete" 
-												use:enhance={handleDelete()}
-												onsubmit={(e) => {
+											<form
+												method="POST"
+												action="?/delete"
+												use:enhance={(event) => {
 													if (!confirm('Tem certeza que deseja excluir esta matrícula?')) {
-														e.preventDefault();
+														return () => {};
 													}
+													return handleDelete()(event);
 												}}
 											>
 												<input type="hidden" name="id" value={enrollment.id} />

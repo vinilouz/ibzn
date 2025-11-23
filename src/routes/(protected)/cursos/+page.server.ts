@@ -43,8 +43,8 @@ async function updateIsFull(courseId: number) {
         .set({ isFull, updatedAt: new Date().toISOString() })
         .where(eq(courses.id, courseId));
     }
-  } catch (error) {
-    console.error('Erro ao atualizar isFull:', error);
+  } catch {
+    // Silently fail
   }
 }
 
@@ -116,8 +116,7 @@ export const load: PageServerLoad = async () => {
       facilitators: allFacilitators,
       rooms: allRooms
     };
-  } catch (error) {
-    console.error('Erro ao carregar dados:', error);
+  } catch {
     return { courses: [], facilitators: [], rooms: [] };
   }
 };
@@ -126,8 +125,6 @@ export const actions: Actions = {
   create: async ({ request }) => {
     try {
       const formData = await request.formData();
-      console.log('FormData recebido:', Object.fromEntries(formData));
-      
       const now = new Date().toISOString();
       
       // Corrigir timezone para startDate
@@ -149,20 +146,15 @@ export const actions: Actions = {
         room: parseInt(formData.get('room') as string)
       };
 
-      console.log('Dados parseados:', data);
-
       const validated = courseSchema.safeParse(data);
       if (!validated.success) {
-        console.error('Erro de validação:', validated.error);
-        return fail(400, { 
+        return fail(400, {
           error: validated.error.issues[0].message,
           fields: data
         });
       }
 
-      console.log('Dados validados:', validated.data);
-
-      const result = await db.insert(courses).values({
+      await db.insert(courses).values({
         courseName: validated.data.courseName,
         description: validated.data.description,
         price: validated.data.price,
@@ -180,13 +172,10 @@ export const actions: Actions = {
         updatedAt: now
       } as any).returning();
 
-      console.log('Curso criado:', result);
-
       cache.invalidate('cursos:data');
       cache.invalidate('painel:stats');
       return { success: true };
     } catch (error) {
-      console.error('Erro ao criar curso:', error);
       return fail(500, { error: 'Erro ao criar curso: ' + (error as Error).message });
     }
   },
@@ -196,9 +185,7 @@ export const actions: Actions = {
       const formData = await request.formData();
       const id = parseInt(formData.get('id') as string);
       const now = new Date().toISOString();
-      
-      console.log('Atualizando curso ID:', id);
-      
+
       // Corrigir timezone para startDate
       const startDateRaw = formData.get('startDate') as string;
       const startDate = startDateRaw ? `${startDateRaw}T12:00:00` : null;
@@ -220,14 +207,13 @@ export const actions: Actions = {
 
       const validated = courseSchema.safeParse(data);
       if (!validated.success) {
-        console.error('Erro de validação:', validated.error);
-        return fail(400, { 
+        return fail(400, {
           error: validated.error.issues[0].message,
           fields: data
         });
       }
 
-      const result = await db.update(courses)
+      await db.update(courses)
         .set({
           courseName: validated.data.courseName,
           description: validated.data.description,
@@ -246,15 +232,12 @@ export const actions: Actions = {
         .where(eq(courses.id, id))
         .returning();
 
-      console.log('Curso atualizado:', result);
-
       await updateIsFull(id);
 
       cache.invalidate('cursos:data');
       cache.invalidate('painel:stats');
       return { success: true };
     } catch (error) {
-      console.error('Erro ao atualizar curso:', error);
       return fail(500, { error: 'Erro ao atualizar curso: ' + (error as Error).message });
     }
   },
@@ -264,19 +247,14 @@ export const actions: Actions = {
       const formData = await request.formData();
       const id = parseInt(formData.get('id') as string);
 
-      console.log('Deletando curso ID:', id);
-
-      const result = await db.delete(courses)
+      await db.delete(courses)
         .where(eq(courses.id, id))
         .returning();
-
-      console.log('Curso deletado:', result);
 
       cache.invalidate('cursos:data');
       cache.invalidate('painel:stats');
       return { success: true };
     } catch (error) {
-      console.error('Erro ao deletar curso:', error);
       return fail(500, { error: 'Erro ao deletar curso: ' + (error as Error).message });
     }
   }
