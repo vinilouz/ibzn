@@ -1,6 +1,6 @@
 import type { PageServerLoad, Actions } from './$types';
 import { db } from '$lib/server/db';
-import { rooms, facilitators } from '$lib/server/db/schema';
+import { rooms, facilitators, courses, appointments } from '$lib/server/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
 import { logger } from '$lib/utils/logger';
@@ -113,15 +113,37 @@ export const actions: Actions = {
     delete: async ({ request }) => {
         try {
             const formData = await request.formData();
-            const id = parseInt(formData.get('id') as string);
+            const idRaw = formData.get('id');
+            
+            const id = parseInt(idRaw as string);
+            
+            if (isNaN(id)) {
+                return fail(400, { error: 'ID inválido' });
+            }
 
+            const coursesUsingRoom = await db.select().from(courses).where(eq(courses.room, id));
+            const appointmentsUsingRoom = await db.select().from(appointments).where(eq(appointments.roomId, id));
+            
+            if (appointmentsUsingRoom.length > 0) {
+                await db.delete(appointments).where(eq(appointments.roomId, id));
+            }
+            
+            if (coursesUsingRoom.length > 0) {
+                const courseNames = coursesUsingRoom.map(c => c.courseName).join(', ');
+                return fail(400, { 
+                    error: `Não é possível deletar esta sala pois ela tem ${coursesUsingRoom.length} curso(s) associado(s): ${courseNames}. Remova ou reassigne os cursos primeiro.` 
+                });
+            }
+            
             await db.delete(rooms).where(eq(rooms.id, id));
+            
             cache.invalidate('salas:data');
             cache.invalidate('painel:stats');
+            
             return { success: true };
         } catch (error) {
             logger.error('Erro ao deletar sala:', error);
-            return fail(500, { error: 'Erro ao deletar sala' });
+            return fail(500, { error: 'Erro ao deletar sala. Verifique se não há registros dependentes.' });
         }
     }
 };

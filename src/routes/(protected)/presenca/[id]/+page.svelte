@@ -371,7 +371,7 @@
 																	action="?/markAttendanceForDate" 
 																	use:enhance={() => {
 																		updateAttendanceOptimistically(student.participantId, list.id, 'present');
-																		return async ({ update }) => {
+																		return async ({ update }: { update: (opts?: { reset?: boolean }) => Promise<void> }) => {
 																			await update({ reset: false });
 																		};
 																	}}
@@ -395,7 +395,7 @@
 																	action="?/markAttendanceForDate"
 																	use:enhance={() => {
 																		updateAttendanceOptimistically(student.participantId, list.id, 'late');
-																		return async ({ update }) => {
+																		return async ({ update }: { update: (opts?: { reset?: boolean }) => Promise<void> }) => {
 																			await update({ reset: false });
 																		};
 																	}}
@@ -419,7 +419,7 @@
 																	action="?/markAttendanceForDate"
 																	use:enhance={() => {
 																		updateAttendanceOptimistically(student.participantId, list.id, 'absent');
-																		return async ({ update }) => {
+																		return async ({ update }: { update: (opts?: { reset?: boolean }) => Promise<void> }) => {
 																			await update({ reset: false });
 																		};
 																	}}
@@ -443,7 +443,7 @@
 																	action="?/markAttendanceForDate"
 																	use:enhance={() => {
 																		updateAttendanceOptimistically(student.participantId, list.id, 'excused');
-																		return async ({ update }) => {
+																		return async ({ update }: { update: (opts?: { reset?: boolean }) => Promise<void> }) => {
 																			await update({ reset: false });
 																		};
 																	}}

@@ -5,6 +5,7 @@
   import { Card, CardContent } from '$lib/components/ui/card';
   import { Switch } from '$lib/components/ui/switch';
   import { ArrowLeft, Save, Trash2 } from 'lucide-svelte';
+  import { showLoading, hideLoading } from '$lib/stores/loading';
 
   let { data } = $props();
 
@@ -109,6 +110,8 @@
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
 
+    showLoading('Atualizando agendamento...');
+
     try {
       const response = await fetch('?/update', {
         method: 'POST',
@@ -117,9 +120,14 @@
 
       if (response.ok) {
         goto('/calendar');
+      } else {
+        alert('Erro ao atualizar agendamento');
       }
     } catch (error) {
       console.error('Error updating appointment:', error);
+      alert('Erro ao atualizar agendamento');
+    } finally {
+      hideLoading();
     }
   }
 
@@ -127,6 +135,8 @@
     if (!confirm('Tem certeza que deseja excluir este agendamento?')) {
       return;
     }
+
+    showLoading('Excluindo agendamento...');
 
     try {
       const formData = new FormData();
@@ -139,9 +149,14 @@
 
       if (response.ok) {
         goto('/calendar');
+      } else {
+        alert('Erro ao excluir agendamento');
       }
     } catch (error) {
       console.error('Error deleting appointment:', error);
+      alert('Erro ao excluir agendamento');
+    } finally {
+      hideLoading();
     }
   }
 </script>
@@ -235,7 +250,7 @@
 
               <div class="flex items-center gap-2 pt-2">
                 <Switch bind:checked={isSignedUp} />
-                <label class="text-sm whitespace-nowrap">Usuário já cadastrado</label>
+                <span class="text-sm whitespace-nowrap">Usuário já cadastrado</span>
               </div>
             </div>
             <input type="hidden" name="isSignedUp" value={String(isSignedUp)} />

@@ -8,6 +8,7 @@
 	import { Users, Plus, Trash2, Search, ChevronLeft, ChevronRight, Pencil } from 'lucide-svelte';
 	import { CalendarDate, getLocalTimeZone, type DateValue } from '@internationalized/date';
 	import { enhance } from '$app/forms';
+	import { enhanceWithLoadingAndCallback } from '$lib/utils/enhance';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -168,14 +169,20 @@
 
 	// Reactive form date-time values
 	const formStartDateTime = $derived.by(() => {
-		const date = selectedDate.toDate(getLocalTimeZone());
-		const dateStr = date.toISOString().split('T')[0];
+		// Formatar data diretamente sem conversão UTC
+		const year = selectedDate.year;
+		const month = String(selectedDate.month).padStart(2, '0');
+		const day = String(selectedDate.day).padStart(2, '0');
+		const dateStr = `${year}-${month}-${day}`;
 		return `${dateStr}T${eventForm.startTime}`;
 	});
 
 	const formEndDateTime = $derived.by(() => {
-		const date = selectedDate.toDate(getLocalTimeZone());
-		const dateStr = date.toISOString().split('T')[0];
+		// Formatar data diretamente sem conversão UTC
+		const year = selectedDate.year;
+		const month = String(selectedDate.month).padStart(2, '0');
+		const day = String(selectedDate.day).padStart(2, '0');
+		const dateStr = `${year}-${month}-${day}`;
 		return `${dateStr}T${eventForm.endTime}`;
 	});
 </script>
@@ -466,17 +473,18 @@
 			<CardContent>
 				{#if showForm}
 					<!-- Formulário de Criação/Edição -->
-					<form method="POST" action={editingEventId ? '?/updateEvent' : '?/createEvent'} use:enhance={() => {
-						return async ({ result, update }) => {
-							if (result.type === 'success') {
+					<form 
+						method="POST" 
+						action={editingEventId ? '?/updateEvent' : '?/createEvent'} 
+						use:enhance={enhanceWithLoadingAndCallback({
+							loadingMessage: editingEventId ? 'Atualizando evento...' : 'Criando evento...',
+							onSuccess: async () => {
 								resetForm();
-								await update();
-							} else {
-								console.error('Erro ao criar evento:', result);
-								await update();
+								await invalidateAll();
 							}
-						};
-					}} class="space-y-4">
+						})} 
+						class="space-y-4"
+					>
 						{#if editingEventId}
 							<input type="hidden" name="id" value={editingEventId} />
 						{/if}
@@ -675,13 +683,16 @@
 										<Button variant="ghost" size="icon" class="h-7 w-7" onclick={() => openEditEventForm(event)}>
 											<Pencil class="h-3 w-3" />
 										</Button>
-										<form method="POST" action="?/deleteEvent" use:enhance={() => {
-											return async ({ result }) => {
-												if (result.type === 'success') {
+										<form 
+											method="POST" 
+											action="?/deleteEvent" 
+											use:enhance={enhanceWithLoadingAndCallback({
+												loadingMessage: 'Deletando evento...',
+												onSuccess: async () => {
 													await invalidateAll();
 												}
-											};
-										}}>
+											})}
+										>
 											<input type="hidden" name="id" value={event.id} />
 											<Button type="submit" variant="ghost" size="icon" class="h-7 w-7 hover:bg-destructive/10">
 												<Trash2 class="h-3 w-3 text-destructive" />

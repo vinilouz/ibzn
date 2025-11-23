@@ -4,6 +4,7 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
 	import { enhanceWithLoadingAndCallback } from '$lib/utils/enhance';
+	import { showLoading, hideLoading } from '$lib/stores/loading';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -47,6 +48,7 @@
 	let currentPage = $state(1);
 	const itemsPerPage = 10;
 	let searchTerm = $state('');
+	let searchBy = $state<'name' | 'teacher' | 'room'>('name');
 	let showAvailableCourses = $state(true);
 	
 	const initialFormData: CourseFormData = {
@@ -167,17 +169,24 @@
 	});
 
 	function handleDelete() {
-		return async ({ cancel, result, update }: any) => {
+		return async ({ result, update }: any) => {
 			// Confirmar antes de deletar
 			const confirmed = confirm('Tem certeza que deseja excluir este curso?');
 			if (!confirmed) {
-				cancel();
 				return;
 			}
 
-			await update();
-			if (result.type === 'success') {
-				await invalidateAll();
+			showLoading('Excluindo curso...');
+
+			try {
+				await update();
+				if (result.type === 'success') {
+					await invalidateAll();
+				} else if (result.type === 'failure') {
+					alert(`Erro ao deletar curso: ${result.data?.error || 'Erro desconhecido'}`);
+				}
+			} finally {
+				hideLoading();
 			}
 		};
 	}
@@ -217,9 +226,23 @@
 
 			if (!searchTerm.trim()) return availabilityMatch;
 
-			const nameMatch = course.courseName.toLowerCase().includes(searchTerm.toLowerCase());
+			let searchMatch = false;
 
-			return availabilityMatch && nameMatch;
+			switch (searchBy) {
+				case 'name':
+					searchMatch = course.courseName.toLowerCase().includes(searchTerm.toLowerCase());
+					break;
+				case 'teacher':
+					searchMatch = (course.teacherName || '').toLowerCase().includes(searchTerm.toLowerCase());
+					break;
+				case 'room':
+					searchMatch = (course.roomName || '').toLowerCase().includes(searchTerm.toLowerCase());
+					break;
+				default:
+					searchMatch = true;
+			}
+
+			return availabilityMatch && searchMatch;
 		});
 	});
 
@@ -229,7 +252,11 @@
 		return filteredCourses.slice(start, end);
 	});
 
+	// Reset página quando filtros mudarem
 	$effect(() => {
+		searchTerm;
+		searchBy;
+		showAvailableCourses;
 		currentPage = 1;
 	});
 </script>
@@ -261,6 +288,14 @@
 							class="pl-10"
 						/>
 					</div>
+					<select
+						bind:value={searchBy}
+						class="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						<option value="name">Nome</option>
+						<option value="teacher">Professor</option>
+						<option value="room">Sala</option>
+					</select>
 					<div class="flex items-center gap-2 px-3 h-10 rounded-md border border-input bg-background">
 						<Switch bind:checked={showAvailableCourses} />
 						<Label class="text-sm cursor-pointer whitespace-nowrap">
@@ -271,7 +306,7 @@
 
 				{#if filteredCourses.length === 0 && searchTerm}
 					<p class="text-sm text-muted-foreground text-center py-8">
-						Nenhum curso encontrado com nome "{searchTerm}"
+						Nenhum curso encontrado com {searchBy === 'name' ? 'nome' : searchBy === 'teacher' ? 'professor' : 'sala'} "{searchTerm}"
 					</p>
 				{:else}
 				<div class="rounded-md border overflow-x-auto">

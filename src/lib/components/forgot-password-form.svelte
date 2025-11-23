@@ -8,6 +8,7 @@
     let email = $state('');
     let loading = $state(false);
     let error = $state('');
+    let success = $state(false);
     
     const handlePasswordReset = async () => {
         if (!email) {
@@ -17,12 +18,14 @@
         
         loading = true;
         error = '';
+        success = false;
         
         try {
             await authClient.requestPasswordReset({
                 email: email,
                 redirectTo: `${window.location.origin}/reset-password`,
             });
+            success = true;
         } catch (err) {
             error = 'Erro ao enviar link de redefinição. Verifique o email e tente novamente.';
         } finally {
@@ -50,7 +53,11 @@
                 </CardDescription>
             </CardHeader>
             <CardContent class="space-y-4">
-                {#if error}
+                {#if success}
+                    <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+                        Link enviado! Verifique seu email (incluindo a caixa de spam).
+                    </div>
+                {:else if error}
                     <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                         {error}
                     </div>

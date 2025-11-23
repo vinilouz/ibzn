@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
 	import { enhanceWithLoadingAndCallback } from '$lib/utils/enhance';
+	import { showLoading, hideLoading } from '$lib/stores/loading';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -172,14 +173,6 @@
 		}
 	});
 
-	function handleDelete() {
-		return (e: Event) => {
-			if (!confirm('Tem certeza que deseja excluir esta sala?')) {
-				e.preventDefault();
-			}
-		};
-	}
-
 	function formatDate(date: Date | string | null) {
 		if (!date) return '-';
 		return new Date(date).toLocaleDateString('pt-BR');
@@ -219,7 +212,11 @@
 		return filteredRooms.slice(start, end);
 	});
 
+	// Reset página quando filtros mudarem
 	$effect(() => {
+		searchTerm;
+		searchBy;
+		showActiveRooms;
 		currentPage = 1;
 	});
 </script>
@@ -333,9 +330,29 @@
 												<form
 													method="POST"
 													action="?/delete"
-													use:enhance
+													use:enhance={() => {
+														if (!confirm('Tem certeza que deseja excluir esta sala?')) {
+															return ({ update }) => update({ reset: false });
+														}
+														
+														showLoading('Excluindo sala...');
+														
+													return async ({ result, update }) => {
+													try {
+														if (result.type === 'success') {
+															await invalidateAll();
+															await update();
+														} else if (result.type === 'failure') {
+															const errorMsg = result.data?.error || 'Erro desconhecido ao deletar sala';
+															alert(errorMsg);
+															await update({ reset: false });
+														}
+														} finally {
+															hideLoading();
+														}
+														};
+													}}
 													class="inline"
-													onsubmit={handleDelete()}
 												>
 													<input type="hidden" name="id" value={room.id} />
 													<Button type="submit" variant="destructive" size="sm">Excluir</Button>

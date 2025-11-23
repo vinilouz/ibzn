@@ -169,10 +169,6 @@ export const actions: Actions = {
               status: 'active',
               notes: `Matrícula criada automaticamente pelo pagamento #${id}`
             });
-
-            console.log(`✅ Matrícula criada: participantId=${participantId}, courseId=${courseId}`);
-          } else {
-            console.log(`ℹ️ Matrícula já existe: participantId=${participantId}, courseId=${courseId}`);
           }
         }
       }

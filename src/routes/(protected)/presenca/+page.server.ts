@@ -5,7 +5,7 @@ import { logger } from '$lib/utils/logger';
 
 export const load = async () => {
 	try {
-		// Query otimizada com JOIN ao invés de N+1 queries
+		
 		const coursesWithStats = await db
 			.select({
 				id: courses.id,

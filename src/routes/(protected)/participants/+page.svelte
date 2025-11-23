@@ -198,9 +198,9 @@
 											<form
 												method="POST"
 												action="?/delete"
-												use:enhance={enhanceWithLoadingAndCallback(() => {})}
+												use:enhance={enhanceWithLoadingAndCallback({ loadingMessage: 'Excluindo...' })}
 												class="inline"
-												onsubmit={(e) => {
+												onsubmit={(e: Event) => {
 													if (!confirm('Tem certeza que deseja excluir este participante?')) {
 														e.preventDefault();
 													}
@@ -322,7 +322,7 @@
 						<form
 							method="POST"
 							action="?/update"
-							use:enhance={enhanceWithLoadingAndCallback(closeDrawer)}
+							use:enhance={enhanceWithLoadingAndCallback({ loadingMessage: 'Atualizando...', onSuccess: closeDrawer })}
 							class="space-y-4"
 						>
 							<input type="hidden" name="id" value={selectedParticipant.id} />
@@ -400,7 +400,7 @@
 						<form
 							method="POST"
 							action="?/delete"
-							use:enhance={enhanceWithLoadingAndCallback(closeDrawer)}
+							use:enhance={enhanceWithLoadingAndCallback({ loadingMessage: 'Excluindo...', onSuccess: closeDrawer })}
 						>
 							<input type="hidden" name="id" value={selectedParticipant.id} />
 							<Button variant="destructive" type="submit" class="w-full">
@@ -414,7 +414,7 @@
 					<form
 						method="POST"
 						action="?/create"
-						use:enhance={enhanceWithLoadingAndCallback(closeDrawer)}
+						use:enhance={enhanceWithLoadingAndCallback({ loadingMessage: 'Criando...', onSuccess: closeDrawer })}
 						class="space-y-4"
 					>
 						<div>

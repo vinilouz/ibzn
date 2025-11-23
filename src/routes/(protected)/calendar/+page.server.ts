@@ -53,22 +53,25 @@ export const actions: Actions = {
       const startTime = data.get('startTime') as string;
       const endTime = data.get('endTime') as string | null;
       const isSignedUp = data.get('isSignedUp') === 'true';
-      const facilitatorId = data.get('facilitatorId') as string | null;
-      const roomId = data.get('roomId') as string | null;
-      const participantId = data.get('participantId') as string | null;
+      const facilitatorIdRaw = data.get('facilitatorId') as string | null;
+      const roomIdRaw = data.get('roomId') as string | null;
+      const participantIdRaw = data.get('participantId') as string | null;
 
-      console.log('Creating appointment with data:', { name, date, startTime, isSignedUp, facilitatorId, roomId, participantId });
-
-      // Validação básica
       if (!date || !startTime || !name) {
-        console.error('Missing required fields:', { date, startTime, name });
         return { success: false, error: 'Campos obrigatórios faltando' };
       }
 
-      // Combina data e hora para criar o timestamp com timezone
+      if (isSignedUp && (!participantIdRaw || participantIdRaw === '')) {
+        return { success: false, error: 'Selecione um participante da lista' };
+      }
+
+      const facilitatorId = facilitatorIdRaw && facilitatorIdRaw !== '' ? Number(facilitatorIdRaw) : null;
+      const roomId = roomIdRaw && roomIdRaw !== '' ? Number(roomIdRaw) : null;
+      const participantId = participantIdRaw && participantIdRaw !== '' ? Number(participantIdRaw) : null;
+
       const dateTime = new Date(`${date}T${startTime}:00`).toISOString();
 
-      await db.insert(appointments).values({
+      const appointmentData = {
         name,
         email: email || null,
         phone: phone || null,
@@ -76,14 +79,15 @@ export const actions: Actions = {
         dateTime,
         endTime: endTime || null,
         isSignedUp,
-        facilitatorId: facilitatorId ? Number(facilitatorId) : null,
-        roomId: roomId ? Number(roomId) : null,
-        participantId: participantId ? Number(participantId) : null,
+        facilitatorId,
+        roomId,
+        participantId,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
-      });
+      };
 
-      console.log('Appointment created successfully');
+      await db.insert(appointments).values(appointmentData);
+
       return { success: true };
     } catch (error) {
       console.error('Error creating appointment:', error);

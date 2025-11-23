@@ -1,11 +1,13 @@
 <script lang="ts">
-  import { enhance } from '$app/forms';
-  import { Card, CardHeader, CardContent, CardTitle } from '$lib/components/ui/card';
-  import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
-  import { Label } from '$lib/components/ui/label';
-  import { Sheet, SheetContent, SheetHeader, SheetTitle } from '$lib/components/ui/sheet';
-  import { enhanceWithLoadingAndCallback } from '$lib/utils/enhance';
+	import { enhance } from '$app/forms';
+	import { Card, CardHeader, CardContent, CardTitle } from '$lib/components/ui/card';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import { Sheet, SheetContent, SheetHeader, SheetTitle } from '$lib/components/ui/sheet';
+	import { enhanceWithLoadingAndCallback } from '$lib/utils/enhance';
+	import { showLoading, hideLoading } from '$lib/stores/loading';
+	import { invalidateAll } from '$app/navigation';
   import { Plus, Pencil, Trash2, Calendar as CalendarIcon, Search } from 'lucide-svelte';
   import { Switch } from '$lib/components/ui/switch';
   import {
@@ -25,12 +27,17 @@
   const itemsPerPage = 10;
   let searchTerm = $state('');
   let showSignedUp = $state(false);
+  let filterDate = $state('');
+  let filterRoomId = $state<number | null>(null);
 
   let selectedDateString = $state('');
-  let name = $state('');
+  let formName = $state('');
   let email = $state('');
   let phone = $state('');
   let reason = $state('');
+  
+  // Garantir que formName seja usado (evita warning do TypeScript)
+  $effect(() => void formName);
   let startTime = $state('');
   let endTime = $state('');
   let isSignedUp = $state(false);
@@ -55,7 +62,7 @@
 
   function resetForm() {
     selectedDateString = '';
-    name = '';
+    formName = '';
     email = '';
     phone = '';
     reason = '';
@@ -68,17 +75,6 @@
     participantSearchTerm = '';
     searchResults = [];
     showParticipantDropdown = false;
-  }
-
-  function formatDateTime(dateTimeStr: string) {
-    const date = new Date(dateTimeStr);
-    return date.toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   }
 
   function formatDate(dateTimeStr: string) {
@@ -109,7 +105,7 @@
   function selectParticipant(participant: {id: number, name: string}) {
     selectedParticipantId = participant.id;
     participantSearchTerm = participant.name;
-    name = participant.name;
+    formName = participant.name;
     displayName = participant.name;
     showParticipantDropdown = false;
     searchResults = [];
@@ -138,7 +134,7 @@
         searchParticipants();
       }, 300);
     } else {
-      name = value;
+      formName = value;
     }
   }
 
@@ -146,13 +142,24 @@
     const appointments = data.appointments || [];
 
     return appointments.filter(appointment => {
+      // Filtro por tipo (cadastrado ou não)
       const signedUpMatch = appointment.isSignedUp === showSignedUp;
 
-      if (!searchTerm.trim()) return signedUpMatch;
+      // Filtro por nome
+      const nameMatch = !searchTerm.trim() || 
+        appointment.name.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const nameMatch = appointment.name.toLowerCase().includes(searchTerm.toLowerCase());
+      // Filtro por data
+      let dateMatch = true;
+      if (filterDate) {
+        const appointmentDate = new Date(appointment.dateTime).toISOString().split('T')[0];
+        dateMatch = appointmentDate === filterDate;
+      }
 
-      return signedUpMatch && nameMatch;
+      // Filtro por sala
+      const roomMatch = !filterRoomId || appointment.roomId === filterRoomId;
+
+      return signedUpMatch && nameMatch && dateMatch && roomMatch;
     });
   });
 
@@ -165,11 +172,18 @@
   // Reset to page 1 when search or filter changes
   let prevSearchTerm = '';
   let prevShowSignedUp = false;
+  let prevFilterDate = '';
+  let prevFilterRoomId: number | null = null;
   $effect(() => {
-    if (searchTerm !== prevSearchTerm || showSignedUp !== prevShowSignedUp) {
+    if (searchTerm !== prevSearchTerm || 
+        showSignedUp !== prevShowSignedUp || 
+        filterDate !== prevFilterDate ||
+        filterRoomId !== prevFilterRoomId) {
       currentPage = 1;
       prevSearchTerm = searchTerm;
       prevShowSignedUp = showSignedUp;
+      prevFilterDate = filterDate;
+      prevFilterRoomId = filterRoomId;
     }
   });
 </script>
@@ -197,21 +211,58 @@
       </CardTitle>
     </CardHeader>
     <CardContent>
-      <div class="mb-4 flex gap-2">
-        <div class="relative flex-1">
-          <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Buscar por nome..."
-            bind:value={searchTerm}
-            class="pl-10"
-          />
+      <div class="mb-4 space-y-3">
+        <!-- Primeira linha: Nome e Switch -->
+        <div class="flex gap-2">
+          <div class="relative flex-1">
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Buscar por nome..."
+              bind:value={searchTerm}
+              class="pl-10"
+            />
+          </div>
+          <div class="flex items-center gap-2 px-3 h-10 rounded-md border border-input bg-background">
+            <Switch bind:checked={showSignedUp} />
+            <Label class="text-sm cursor-pointer whitespace-nowrap">
+              {showSignedUp ? 'Cadastrado' : 'Não Cadastrado'}
+            </Label>
+          </div>
         </div>
-        <div class="flex items-center gap-2 px-3 h-10 rounded-md border border-input bg-background">
-          <Switch bind:checked={showSignedUp} />
-          <Label class="text-sm cursor-pointer whitespace-nowrap">
-            {showSignedUp ? 'Cadastrado' : 'Não Cadastrado'}
-          </Label>
+
+        <!-- Segunda linha: Data e Sala -->
+        <div class="flex gap-2">
+          <div class="flex-1">
+            <Input
+              type="date"
+              placeholder="Filtrar por data"
+              bind:value={filterDate}
+            />
+          </div>
+          <div class="flex-1">
+            <select
+              bind:value={filterRoomId}
+              class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <option value={null}>Todas as salas</option>
+              {#each data.rooms as room}
+                <option value={room.id}>{room.name} (Sala {room.number})</option>
+              {/each}
+            </select>
+          </div>
+          {#if filterDate || filterRoomId}
+            <Button
+              variant="outline"
+              size="sm"
+              onclick={() => {
+                filterDate = '';
+                filterRoomId = null;
+              }}
+            >
+              Limpar
+            </Button>
+          {/if}
         </div>
       </div>
 
@@ -277,6 +328,8 @@
                           return;
                         }
 
+                        showLoading('Excluindo agendamento...');
+
                         try {
                           const formData = new FormData();
                           formData.append('id', String(appointment.id));
@@ -287,10 +340,15 @@
                           });
 
                           if (response.ok) {
-                            window.location.reload();
+                            await invalidateAll();
+                          } else {
+                            alert('Erro ao excluir agendamento');
                           }
                         } catch (error) {
                           console.error('Error deleting appointment:', error);
+                          alert('Erro ao excluir agendamento');
+                        } finally {
+                          hideLoading();
                         }
                       }}
                     >
@@ -336,7 +394,10 @@
         <form
           method="POST"
           action="?/create"
-          use:enhance={enhanceWithLoadingAndCallback(closeDrawer)}
+          use:enhance={enhanceWithLoadingAndCallback({
+            loadingMessage: 'Criando agendamento...',
+            onSuccess: closeDrawer
+          })}
           class="space-y-6"
         >
 
@@ -409,7 +470,7 @@
 
                   <div class="flex items-center gap-2 pt-2">
                     <Switch bind:checked={isSignedUp} />
-                    <label class="text-sm whitespace-nowrap">Usuário já cadastrado</label>
+                    <span class="text-sm whitespace-nowrap">Usuário já cadastrado</span>
                   </div>
                 </div>
                 <input type="hidden" name="isSignedUp" value={String(isSignedUp)} />

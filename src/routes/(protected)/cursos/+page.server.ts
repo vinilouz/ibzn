@@ -130,6 +130,10 @@ export const actions: Actions = {
       
       const now = new Date().toISOString();
       
+      // Corrigir timezone para startDate
+      const startDateRaw = formData.get('startDate') as string;
+      const startDate = startDateRaw ? `${startDateRaw}T12:00:00` : null;
+
       const data = {
         courseName: formData.get('courseName') as string,
         description: (formData.get('description') as string) || null,
@@ -137,7 +141,7 @@ export const actions: Actions = {
         capacity: parseInt(formData.get('capacity') as string),
         duration: parseInt(formData.get('duration') as string),
         sessionsInfo: (formData.get('sessionsInfo') as string) || null,
-        startDate: (formData.get('startDate') as string) || null,
+        startDate: startDate,
         weekdays: (formData.get('weekdays') as any) || null,
         startTime: (formData.get('startTime') as string) || null,
         endTime: (formData.get('endTime') as string) || null,
@@ -195,6 +199,10 @@ export const actions: Actions = {
       
       console.log('Atualizando curso ID:', id);
       
+      // Corrigir timezone para startDate
+      const startDateRaw = formData.get('startDate') as string;
+      const startDate = startDateRaw ? `${startDateRaw}T12:00:00` : null;
+      
       const data = {
         courseName: formData.get('courseName') as string,
         description: (formData.get('description') as string) || null,
@@ -202,7 +210,7 @@ export const actions: Actions = {
         capacity: parseInt(formData.get('capacity') as string),
         duration: parseInt(formData.get('duration') as string),
         sessionsInfo: (formData.get('sessionsInfo') as string) || null,
-        startDate: (formData.get('startDate') as string) || null,
+        startDate: startDate,
         weekdays: (formData.get('weekdays') as any) || null,
         startTime: (formData.get('startTime') as string) || null,
         endTime: (formData.get('endTime') as string) || null,

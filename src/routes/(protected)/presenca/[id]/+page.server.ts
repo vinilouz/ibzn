@@ -109,8 +109,11 @@ export const actions: Actions = {
 
 			const formData = await event.request.formData();
 			const courseId = parseInt(formData.get('courseId') as string);
-			const date = formData.get('date') as string;
+			const dateRaw = formData.get('date') as string;
 			const notes = formData.get('notes') as string;
+
+			// Corrigir timezone: adicionar horário meio-dia para evitar mudança de dia
+			const date = `${dateRaw}T12:00:00`;
 
 			// Create attendance list
 			const [newList] = await db.insert(attendanceLists)

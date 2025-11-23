@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -148,13 +148,12 @@
 		}
 	});
 
-	function handleDelete() {
-		return async ({ update }: any) => {
-			if (confirm('Tem certeza que deseja excluir esta matrícula?')) {
-				await update();
-			}
-		};
-	}
+	const handleDelete = () => enhanceWithLoadingAndCallback({
+		loadingMessage: 'Excluindo matrícula...',
+		onSuccess: async () => {
+			await invalidateAll();
+		}
+	});
 
 	function formatDate(date: Date | string | null) {
 		if (!date) return '-';
@@ -356,7 +355,16 @@
 												Editar
 											</Button>
 
-											<form method="POST" action="?/delete" use:enhance={handleDelete()}>
+											<form 
+												method="POST" 
+												action="?/delete" 
+												use:enhance={handleDelete()}
+												onsubmit={(e) => {
+													if (!confirm('Tem certeza que deseja excluir esta matrícula?')) {
+														e.preventDefault();
+													}
+												}}
+											>
 												<input type="hidden" name="id" value={enrollment.id} />
 												<Button type="submit" variant="ghost" size="sm">
 													<X class="h-4 w-4" />

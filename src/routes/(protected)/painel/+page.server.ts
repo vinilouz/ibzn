@@ -103,9 +103,9 @@ export const actions: Actions = {
 		try {
 			await db.insert(events).values({
 				nome,
-				descricao: descricao || null,
-				start,
-				end: end || null,
+				descricao: descricao || undefined,
+				start: start, // Já vem no formato correto: 2027-12-12T10:30
+				end: end || undefined,
 				createdAt: new Date().toISOString()
 			});
 
@@ -133,9 +133,9 @@ export const actions: Actions = {
 			await db.update(events)
 				.set({
 					nome,
-					descricao: descricao || null,
-					start,
-					end: end || null
+					descricao: descricao || undefined,
+					start: start, // Já vem no formato correto: 2027-12-12T10:30
+					end: end || undefined
 				})
 				.where(eq(events.id, parseInt(id)));
 

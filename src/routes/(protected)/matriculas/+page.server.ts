@@ -171,12 +171,19 @@ export const actions: Actions = {
 			}
 
 			const formData = await event.request.formData();
-			const id = parseInt(formData.get('id') as string);
+			const idRaw = formData.get('id');
+			
+			const id = parseInt(idRaw as string);
+			
+			if (isNaN(id)) {
+				return fail(400, { error: 'ID inválido' });
+			}
 
 			await db.delete(courseEnrollments).where(eq(courseEnrollments.id, id));
 
 			cache.invalidatePattern('enrollments');
 			cache.invalidate('painel:stats');
+			
 			return { success: true };
 		} catch (error) {
 			logger.error('Erro ao deletar matrícula:', error);

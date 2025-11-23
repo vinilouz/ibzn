@@ -35,7 +35,7 @@ export const auth = betterAuth({
     sendResetPassword: async ({ user, url }) => {
       try {
         const { data, error } = await resend.emails.send({
-          from: 'IBZN <onboarding@resend.dev>', //tem que trocar esse email dps la no resend quando tiver o dominio
+          from: 'IBZN <onboarding@resend.dev>',
           to: [user.email],
           subject: 'Redefinir sua senha',
           html: /* trocar isso dps */` 
