@@ -1,7 +1,7 @@
 import type { Actions } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { courseEnrollments, courses, participants } from '$lib/server/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { courseEnrollments, courses, participants, payments } from '$lib/server/db/schema';
+import { eq, desc, and } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
 import { logger } from '$lib/utils/logger';
 import { requireAuth } from '$lib/server/middleware/auth';
@@ -67,16 +67,65 @@ export const actions: Actions = {
 			const amount = parseFloat(formData.get('amount') as string);
 			const notes = formData.get('notes') as string;
 
-			await db.insert(courseEnrollments).values({
+			// Verificar se já existe matrícula ativa para este participante/curso
+			const existingEnrollment = await db
+				.select()
+				.from(courseEnrollments)
+				.where(
+					and(
+						eq(courseEnrollments.participantId, participantId),
+						eq(courseEnrollments.courseId, courseId),
+						eq(courseEnrollments.status, 'active')
+					)
+				)
+				.limit(1);
+
+			if (existingEnrollment.length > 0) {
+				return fail(400, { error: 'Este participante já está matriculado neste curso' });
+			}
+
+			// Verificar se já existe pagamento pendente para este participante/curso
+			const existingPayment = await db
+				.select()
+				.from(payments)
+				.where(
+					and(
+						eq(payments.participantId, participantId),
+						eq(payments.courseId, courseId),
+						eq(payments.status, 'pending')
+					)
+				)
+				.limit(1);
+
+			// Criar matrícula
+			const [newEnrollment] = await db.insert(courseEnrollments).values({
 				participantId,
 				courseId,
 				status: 'active',
 				amount,
 				notes: notes || null
-			});
+			}).returning();
+
+			// Criar pagamento pendente se não existir
+			if (existingPayment.length === 0) {
+				await db.insert(payments).values({
+					participantId,
+					courseId,
+					amount,
+					discount: 0,
+					finalAmount: amount,
+					status: 'pending',
+					paymentMethod: null,
+					notes: `Pagamento criado automaticamente pela matrícula #${newEnrollment.id}`,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString()
+				});
+			}
 
 			cache.invalidatePattern('enrollments');
+			cache.invalidatePattern('payments');
 			cache.invalidate('painel:stats');
+			cache.invalidate('financeiro:dashboard');
 			return { success: true };
 		} catch (error) {
 			logger.error('Erro ao criar matrícula:', error);
@@ -97,10 +146,38 @@ export const actions: Actions = {
 
 			logger.info(`Atualizando matrícula ${id} para status: ${status}`);
 
+			// Buscar dados da matrícula
+			const enrollment = await db
+				.select()
+				.from(courseEnrollments)
+				.where(eq(courseEnrollments.id, id))
+				.limit(1);
+
+			if (enrollment.length === 0) {
+				return fail(404, { error: 'Matrícula não encontrada' });
+			}
+
+			const { participantId, courseId } = enrollment[0];
+
 			const updateData: any = { status };
-			
+
 			if (status === 'cancelled') {
 				updateData.cancelledAt = new Date().toISOString();
+
+				// Cancelar pagamento pendente relacionado
+				await db.update(payments)
+					.set({
+						status: 'cancelled',
+						cancelledAt: new Date().toISOString(),
+						updatedAt: new Date().toISOString()
+					})
+					.where(
+						and(
+							eq(payments.participantId, participantId),
+							eq(payments.courseId, courseId),
+							eq(payments.status, 'pending')
+						)
+					);
 			}
 
 			const result = await db.update(courseEnrollments)
@@ -111,7 +188,9 @@ export const actions: Actions = {
 			logger.info(`Status atualizado com sucesso:`, result);
 
 			cache.invalidatePattern('enrollments');
+			cache.invalidatePattern('payments');
 			cache.invalidate('painel:stats');
+			cache.invalidate('financeiro:dashboard');
 			return { success: true };
 		} catch (error) {
 			logger.error('Erro ao atualizar status:', error);
@@ -172,18 +251,46 @@ export const actions: Actions = {
 
 			const formData = await event.request.formData();
 			const idRaw = formData.get('id');
-			
+
 			const id = parseInt(idRaw as string);
-			
+
 			if (isNaN(id)) {
 				return fail(400, { error: 'ID inválido' });
+			}
+
+			// Buscar dados da matrícula antes de deletar
+			const enrollment = await db
+				.select()
+				.from(courseEnrollments)
+				.where(eq(courseEnrollments.id, id))
+				.limit(1);
+
+			if (enrollment.length > 0) {
+				const { participantId, courseId } = enrollment[0];
+
+				// Cancelar pagamento pendente relacionado
+				await db.update(payments)
+					.set({
+						status: 'cancelled',
+						cancelledAt: new Date().toISOString(),
+						updatedAt: new Date().toISOString()
+					})
+					.where(
+						and(
+							eq(payments.participantId, participantId),
+							eq(payments.courseId, courseId),
+							eq(payments.status, 'pending')
+						)
+					);
 			}
 
 			await db.delete(courseEnrollments).where(eq(courseEnrollments.id, id));
 
 			cache.invalidatePattern('enrollments');
+			cache.invalidatePattern('payments');
 			cache.invalidate('painel:stats');
-			
+			cache.invalidate('financeiro:dashboard');
+
 			return { success: true };
 		} catch (error) {
 			logger.error('Erro ao deletar matrícula:', error);

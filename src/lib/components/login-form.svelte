@@ -4,11 +4,13 @@
 	import { Label } from '$lib/components/ui/label';
 	import { signIn } from '$lib/auth.client';
 	import { goto } from '$app/navigation';
+	import { Eye, EyeOff } from 'lucide-svelte';
 
 	let email = $state('');
 	let password = $state('');
 	let loading = $state(false);
 	let error = $state('');
+	let showPassword = $state(false);
 
 	const handleEmailLogin = async () => {
 		if (!email || !password) {
@@ -75,12 +77,26 @@
 					Esqueceu a senha?
 				</a>
 			</div>
-			<Input
-				id="password"
-				type="password"
-				bind:value={password}
-				required
-			/>
+			<div class="relative">
+				<Input
+					id="password"
+					type={showPassword ? 'text' : 'password'}
+					bind:value={password}
+					required
+					class="pr-10"
+				/>
+				<button
+					type="button"
+					class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+					onclick={() => showPassword = !showPassword}
+				>
+					{#if showPassword}
+						<EyeOff class="h-4 w-4" />
+					{:else}
+						<Eye class="h-4 w-4" />
+					{/if}
+				</button>
+			</div>
 		</div>
 
 		<Button

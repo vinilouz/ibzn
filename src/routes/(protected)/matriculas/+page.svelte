@@ -64,10 +64,12 @@
 			enrollments = enrollments.filter((e: any) => e.status === statusFilter);
 		}
 
-		// Filter by search term (participant name)
+		// Filter by search term (participant name or course name)
 		if (searchTerm.trim()) {
+			const search = searchTerm.toLowerCase();
 			enrollments = enrollments.filter((e: any) =>
-				e.participantName?.toLowerCase().includes(searchTerm.toLowerCase())
+				e.participantName?.toLowerCase().includes(search) ||
+				e.courseName?.toLowerCase().includes(search)
 			);
 		}
 
@@ -303,7 +305,7 @@
 						<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 						<Input
 							type="text"
-							placeholder="Buscar por nome do participante..."
+							placeholder="Buscar por participante ou curso..."
 							bind:value={searchTerm}
 							class="pl-10"
 						/>

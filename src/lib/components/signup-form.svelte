@@ -2,9 +2,10 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	
+
 	import { signUp } from '$lib/auth.client';
 	import { goto } from '$app/navigation';
+	import { Eye, EyeOff } from 'lucide-svelte';
 
 	let name = $state('');
 	let email = $state('');
@@ -12,6 +13,8 @@
 	let confirmPassword = $state('');
 	let loading = $state(false);
 	let error = $state('');
+	let showPassword = $state(false);
+	let showConfirmPassword = $state(false);
 
 	const handleSignup = async () => {
 		if (!name || !email || !password || !confirmPassword) {
@@ -94,24 +97,52 @@
 
 		<div class="space-y-2">
 			<Label for="password">Senha</Label>
-			<Input
-				id="password"
-				type="password"
-				placeholder="Mínimo 6 caracteres"
-				bind:value={password}
-				required
-			/>
+			<div class="relative">
+				<Input
+					id="password"
+					type={showPassword ? 'text' : 'password'}
+					placeholder="Mínimo 6 caracteres"
+					bind:value={password}
+					required
+					class="pr-10"
+				/>
+				<button
+					type="button"
+					class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+					onclick={() => showPassword = !showPassword}
+				>
+					{#if showPassword}
+						<EyeOff class="h-4 w-4" />
+					{:else}
+						<Eye class="h-4 w-4" />
+					{/if}
+				</button>
+			</div>
 		</div>
 
 		<div class="space-y-2">
 			<Label for="confirmPassword">Confirmar Senha</Label>
-			<Input
-				id="confirmPassword"
-				type="password"
-				placeholder="Repita sua senha"
-				bind:value={confirmPassword}
-				required
-			/>
+			<div class="relative">
+				<Input
+					id="confirmPassword"
+					type={showConfirmPassword ? 'text' : 'password'}
+					placeholder="Repita sua senha"
+					bind:value={confirmPassword}
+					required
+					class="pr-10"
+				/>
+				<button
+					type="button"
+					class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+					onclick={() => showConfirmPassword = !showConfirmPassword}
+				>
+					{#if showConfirmPassword}
+						<EyeOff class="h-4 w-4" />
+					{:else}
+						<Eye class="h-4 w-4" />
+					{/if}
+				</button>
+			</div>
 		</div>
 
 		<Button

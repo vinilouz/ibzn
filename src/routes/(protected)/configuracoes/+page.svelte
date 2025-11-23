@@ -6,9 +6,10 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Badge } from '$lib/components/ui/badge';
 	import { enhanceWithLoadingAndCallback } from '$lib/utils/enhance';
-	import { User, Lock, Trash2, Mail, Shield, AlertTriangle, Users } from 'lucide-svelte';
+	import { showLoading, hideLoading } from '$lib/stores/loading';
+	import { User, Lock, Trash2, Mail, Shield, AlertTriangle, Users, Eye, EyeOff } from 'lucide-svelte';
 
-	let { data } = $props();
+	let { data, form } = $props();
 
 	let showDeleteConfirm = $state(false);
 	let deleteConfirmation = $state('');
@@ -24,6 +25,13 @@
 		newPassword: '',
 		confirmPassword: ''
 	});
+
+	let passwordSuccess = $state(false);
+
+	let showCurrentPassword = $state(false);
+	let showNewPassword = $state(false);
+	let showConfirmPassword = $state(false);
+	let showDeletePassword = $state(false);
 
 	function handleSuccess() {
 		passwordData = {
@@ -110,42 +118,109 @@
 			</div>
 		</CardHeader>
 		<CardContent>
-			<form method="POST" action="?/changePassword" use:enhance={enhanceWithLoadingAndCallback({ loadingMessage: 'Alterando senha...', onSuccess: handleSuccess })} class="space-y-4">
+			<form method="POST" action="?/changePassword" use:enhance={() => {
+					passwordSuccess = false;
+					showLoading('Alterando senha...');
+					return async ({ result, update }) => {
+						try {
+							await update({ reset: false });
+							if (result.type === 'success') {
+								handleSuccess();
+								passwordSuccess = true;
+							}
+						} finally {
+							hideLoading();
+						}
+					};
+				}} class="space-y-4">
+				{#if passwordSuccess}
+					<div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+						Senha alterada com sucesso!
+					</div>
+				{/if}
+				{#if form?.message && !passwordSuccess}
+					<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+						{form.message}
+					</div>
+				{/if}
+
 				<div class="space-y-2">
 					<Label for="currentPassword">Senha Atual *</Label>
-					<Input
-						id="currentPassword"
-						name="currentPassword"
-						type="password"
-						bind:value={passwordData.currentPassword}
-						placeholder="Digite sua senha atual"
-						required
-					/>
+					<div class="relative">
+						<Input
+							id="currentPassword"
+							name="currentPassword"
+							type={showCurrentPassword ? 'text' : 'password'}
+							bind:value={passwordData.currentPassword}
+							placeholder="Digite sua senha atual"
+							required
+							class="pr-10"
+						/>
+						<button
+							type="button"
+							class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+							onclick={() => showCurrentPassword = !showCurrentPassword}
+						>
+							{#if showCurrentPassword}
+								<EyeOff class="h-4 w-4" />
+							{:else}
+								<Eye class="h-4 w-4" />
+							{/if}
+						</button>
+					</div>
 				</div>
 
 				<div class="grid gap-4 md:grid-cols-2">
 					<div class="space-y-2">
 						<Label for="newPassword">Nova Senha *</Label>
-						<Input
-							id="newPassword"
-							name="newPassword"
-							type="password"
-							bind:value={passwordData.newPassword}
-							placeholder="Mínimo 8 caracteres"
-							required
-						/>
+						<div class="relative">
+							<Input
+								id="newPassword"
+								name="newPassword"
+								type={showNewPassword ? 'text' : 'password'}
+								bind:value={passwordData.newPassword}
+								placeholder="Mínimo 8 caracteres"
+								required
+								class="pr-10"
+							/>
+							<button
+								type="button"
+								class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+								onclick={() => showNewPassword = !showNewPassword}
+							>
+								{#if showNewPassword}
+									<EyeOff class="h-4 w-4" />
+								{:else}
+									<Eye class="h-4 w-4" />
+								{/if}
+							</button>
+						</div>
 					</div>
 
 					<div class="space-y-2">
 						<Label for="confirmPassword">Confirmar Nova Senha *</Label>
-						<Input
-							id="confirmPassword"
-							name="confirmPassword"
-							type="password"
-							bind:value={passwordData.confirmPassword}
-							placeholder="Digite novamente"
-							required
-						/>
+						<div class="relative">
+							<Input
+								id="confirmPassword"
+								name="confirmPassword"
+								type={showConfirmPassword ? 'text' : 'password'}
+								bind:value={passwordData.confirmPassword}
+								placeholder="Digite novamente"
+								required
+								class="pr-10"
+							/>
+							<button
+								type="button"
+								class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+								onclick={() => showConfirmPassword = !showConfirmPassword}
+							>
+								{#if showConfirmPassword}
+									<EyeOff class="h-4 w-4" />
+								{:else}
+									<Eye class="h-4 w-4" />
+								{/if}
+							</button>
+						</div>
 					</div>
 				</div>
 
@@ -306,14 +381,28 @@
 
 					<div class="space-y-2">
 						<Label for="deletePassword">Senha *</Label>
-						<Input 
-							id="deletePassword" 
-							name="password" 
-							type="password" 
-							bind:value={deletePassword}
-							placeholder="Digite sua senha"
-							required 
-						/>
+						<div class="relative">
+							<Input
+								id="deletePassword"
+								name="password"
+								type={showDeletePassword ? 'text' : 'password'}
+								bind:value={deletePassword}
+								placeholder="Digite sua senha"
+								required
+								class="pr-10"
+							/>
+							<button
+								type="button"
+								class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+								onclick={() => showDeletePassword = !showDeletePassword}
+							>
+								{#if showDeletePassword}
+									<EyeOff class="h-4 w-4" />
+								{:else}
+									<Eye class="h-4 w-4" />
+								{/if}
+							</button>
+						</div>
 					</div>
 
 					<div class="space-y-2">

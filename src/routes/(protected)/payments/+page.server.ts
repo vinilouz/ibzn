@@ -138,6 +138,34 @@ export const actions: Actions = {
       .set(updateData)
       .where(eq(payments.id, id));
 
+    // Se cancelado, cancelar matrícula relacionada
+    if (status === 'cancelled') {
+      const payment = await db
+        .select()
+        .from(payments)
+        .where(eq(payments.id, id))
+        .limit(1);
+
+      if (payment.length > 0) {
+        const { participantId, courseId } = payment[0];
+
+        if (participantId && courseId) {
+          await db.update(courseEnrollments)
+            .set({
+              status: 'cancelled',
+              cancelledAt: new Date().toISOString()
+            })
+            .where(
+              and(
+                eq(courseEnrollments.participantId, participantId),
+                eq(courseEnrollments.courseId, courseId),
+                eq(courseEnrollments.status, 'active')
+              )
+            );
+        }
+      }
+    }
+
     if (status === 'paid') {
       const payment = await db
         .select()
@@ -175,6 +203,7 @@ export const actions: Actions = {
     }
 
     cache.invalidatePattern('payments');
+    cache.invalidatePattern('enrollments');
     cache.invalidate('painel:stats');
     cache.invalidate('financeiro:dashboard');
     return { success: true };
@@ -184,9 +213,37 @@ export const actions: Actions = {
     const data = await request.formData();
     const id = Number(data.get('id'));
 
+    // Buscar pagamento antes de deletar
+    const payment = await db
+      .select()
+      .from(payments)
+      .where(eq(payments.id, id))
+      .limit(1);
+
+    if (payment.length > 0) {
+      const { participantId, courseId, status } = payment[0];
+
+      // Se pagamento era pendente, cancelar matrícula relacionada
+      if (status === 'pending' && participantId && courseId) {
+        await db.update(courseEnrollments)
+          .set({
+            status: 'cancelled',
+            cancelledAt: new Date().toISOString()
+          })
+          .where(
+            and(
+              eq(courseEnrollments.participantId, participantId),
+              eq(courseEnrollments.courseId, courseId),
+              eq(courseEnrollments.status, 'active')
+            )
+          );
+      }
+    }
+
     await db.delete(payments).where(eq(payments.id, id));
 
     cache.invalidatePattern('payments');
+    cache.invalidatePattern('enrollments');
     cache.invalidate('painel:stats');
     cache.invalidate('financeiro:dashboard');
     return { success: true };

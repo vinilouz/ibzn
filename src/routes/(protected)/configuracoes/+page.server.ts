@@ -75,21 +75,28 @@ export const actions: Actions = {
 		if (session.user.role !== 'admin') return fail(403, { message: 'Acesso negado. Apenas administradores podem alterar senha.' });
 
 		const formData = await event.request.formData();
+		const currentPassword = formData.get('currentPassword') as string;
 		const newPassword = formData.get('newPassword') as string;
 		const confirmPassword = formData.get('confirmPassword') as string;
 
-		if (!newPassword || !confirmPassword) return fail(400, { message: 'Nova senha e confirmação são obrigatórios' });
+		if (!currentPassword || !newPassword || !confirmPassword) return fail(400, { message: 'Todos os campos são obrigatórios' });
 		if (newPassword !== confirmPassword) return fail(400, { message: 'As senhas não coincidem' });
 		if (newPassword.length < 8) return fail(400, { message: 'A senha deve ter no mínimo 8 caracteres' });
 
 		try {
-			await auth.api.setPassword({
-				body: { newPassword },
+			await auth.api.changePassword({
+				body: {
+					currentPassword,
+					newPassword
+				},
 				headers: event.request.headers
 			});
 			return { success: true, message: 'Senha alterada com sucesso!' };
-		} catch (error) {
+		} catch (error: any) {
 			console.error('Erro ao alterar senha:', error);
+			if (error?.message?.includes('Invalid password') || error?.body?.message?.includes('Invalid password')) {
+				return fail(400, { message: 'Senha atual incorreta' });
+			}
 			return fail(500, { message: 'Erro ao alterar senha.' });
 		}
 	},
