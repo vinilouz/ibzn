@@ -7,9 +7,7 @@ import { cache } from '$lib/server/cache';
 
 export const load: PageServerLoad = async () => {
   try {
-    const [allPayments, allCourses, allParticipants] = await cache.get(
-      'payments:list',
-      async () => Promise.all([
+    const [allPayments, allCourses, allParticipants] = await Promise.all([
       db
         .select({
           payment: payments,
@@ -33,9 +31,7 @@ export const load: PageServerLoad = async () => {
         name: participants.name,
         phone: participants.phone
       }).from(participants)
-    ]),
-    30000
-  );
+    ]);
 
     return {
       payments: allPayments,
@@ -116,6 +112,7 @@ export const actions: Actions = {
 
     cache.invalidatePattern('payments');
     cache.invalidate('painel:stats');
+    cache.invalidate('financeiro:dashboard');
     return { success: true };
   },
 
@@ -183,6 +180,7 @@ export const actions: Actions = {
 
     cache.invalidatePattern('payments');
     cache.invalidate('painel:stats');
+    cache.invalidate('financeiro:dashboard');
     return { success: true };
   },
 
@@ -194,6 +192,7 @@ export const actions: Actions = {
 
     cache.invalidatePattern('payments');
     cache.invalidate('painel:stats');
+    cache.invalidate('financeiro:dashboard');
     return { success: true };
   }
 };

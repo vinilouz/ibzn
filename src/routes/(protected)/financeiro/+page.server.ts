@@ -103,5 +103,5 @@ export const load: PageServerLoad = async (event) => {
       receitaPorCurso: receitaPorCursoArray,
       cursosComEstatisticas,
     };
-  }, 40000);
+  }, 10000); // 10 segundos - atualização mais rápida
 };

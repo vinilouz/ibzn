@@ -1,6 +1,6 @@
 import type { Actions, PageServerLoad } from './$types.js';
 import { db } from '$lib/server/db';
-import { facilitators, rooms, appointments, courses, attendanceLists } from '$lib/server/db/schema';
+import { facilitators, rooms, appointments, courses } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 
 export const load: PageServerLoad = async () => {
@@ -75,11 +75,7 @@ export const actions: Actions = {
       .set({ facilitatorId: null })
       .where(eq(appointments.facilitatorId, id));
 
-    // 3. Deletar listas de presença criadas por este facilitador (tem cascade)
-    await db.delete(attendanceLists)
-      .where(eq(attendanceLists.createdBy, id));
-
-    // 4. Verificar se há cursos usando este facilitador como teacher
+    // 3. Verificar se há cursos usando este facilitador como teacher
     // Não vamos deletar cursos, apenas impedimos a exclusão se houver cursos ativos
     const coursesUsingFacilitator = await db
       .select()

@@ -17,6 +17,7 @@
 	} from '$lib/components/ui/table';
 	import { Plus, X, Search } from 'lucide-svelte';
 	import Pagination from '$lib/components/Pagination.svelte';
+	import { enhanceWithLoadingAndCallback } from '$lib/utils/enhance';
 
 	interface EnrollmentFormData {
 		participantId: string;
@@ -139,13 +140,13 @@
 		goto('/matriculas?view=create');
 	}
 
-	function handleFormSubmit() {
-		return async ({ update }: any) => {
-			await update();
+	const handleFormSubmit = () => enhanceWithLoadingAndCallback({
+		loadingMessage: isEditing ? 'Atualizando matrícula...' : 'Criando matrícula...',
+		onSuccess: () => {
 			resetForm();
 			goto('/matriculas?view=list');
-		};
-	}
+		}
+	});
 
 	function handleDelete() {
 		return async ({ update }: any) => {
@@ -386,7 +387,7 @@
 				<form
 					method="POST"
 					action={isEditing ? '?/update' : '?/create'}
-					use:enhance={handleFormSubmit}
+					use:enhance={handleFormSubmit()}
 					class="space-y-6"
 				>
 					{#if isEditing}
@@ -477,7 +478,9 @@
 						<Button type="submit">
 							{isEditing ? 'Atualizar' : 'Criar'} Matrícula
 						</Button>
-						<Button type="button" variant="outline" onclick={cancelEdit}>Cancelar</Button>
+						<Button type="button" variant="outline" onclick={cancelEdit}>
+							Cancelar
+						</Button>
 					</div>
 				</form>
 			</CardContent>

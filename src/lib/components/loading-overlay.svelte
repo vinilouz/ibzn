@@ -1,29 +1,34 @@
 <script lang="ts">
 	import { navigating } from '$app/stores';
-	import { isLoading } from '$lib/stores/loading';
-	import { fade } from 'svelte/transition';
+	import { loadingStore } from '$lib/stores/loading';
+	import { fade, scale } from 'svelte/transition';
 	import { onDestroy } from 'svelte';
 
 	let showOverlay = $state(false);
+	let loadingMessage = $state('Carregando...');
 	let minDisplayTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	// Show overlay when navigating OR when manually triggered
 	$effect(() => {
-		const shouldShow = $navigating !== null || $isLoading;
+		const isNavigating = $navigating !== null;
+		const isManualLoading = $loadingStore.isLoading;
+		const shouldShow = isNavigating || isManualLoading;
 		
 		if (shouldShow) {
 			showOverlay = true;
+			loadingMessage = isManualLoading ? $loadingStore.message : 'Carregando...';
+			
 			// Clear any existing timeout
 			if (minDisplayTimeout) {
 				clearTimeout(minDisplayTimeout);
 				minDisplayTimeout = null;
 			}
 		} else if (showOverlay) {
-			// When navigation/loading ends, keep showing for minimum 300ms
+			// When navigation/loading ends, keep showing for minimum 200ms for smooth transition
 			minDisplayTimeout = setTimeout(() => {
 				showOverlay = false;
 				minDisplayTimeout = null;
-			}, 300);
+			}, 200);
 		}
 	});
 
@@ -39,16 +44,18 @@
 	<div 
 		class="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center"
 		style="z-index: 99999;"
-		in:fade={{ duration: 150 }}
-		out:fade={{ duration: 150 }}
+		transition:fade={{ duration: 150 }}
 	>
-		<div class="relative bg-card p-8 rounded-xl shadow-2xl border border-border">
+		<div 
+			class="relative bg-card p-8 rounded-xl shadow-2xl border border-border"
+			transition:scale={{ duration: 200, start: 0.95 }}
+		>
 			<!-- Spinner Circle -->
-			<div class="w-12 h-12 border-4 border-muted border-t-primary rounded-full animate-spin mx-auto"></div>
+			<div class="w-16 h-16 border-4 border-muted border-t-primary rounded-full animate-spin mx-auto"></div>
 			
-			<!-- Optional: Loading text -->
-			<p class="mt-4 text-sm font-medium text-muted-foreground text-center">
-				Carregando...
+			<!-- Loading text with message -->
+			<p class="mt-4 text-base font-medium text-foreground text-center min-w-[200px]">
+				{loadingMessage}
 			</p>
 		</div>
 	</div>

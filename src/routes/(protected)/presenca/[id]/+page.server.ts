@@ -10,24 +10,18 @@ export const load = async ({ params }: any) => {
 	try {
 		const courseId = parseInt(params.id);
 
-		// Load course details
-		const [course] = await db
-			.select({
+		// Executar todas as queries em paralelo para melhor performance
+		const [courseResult, enrolledStudents, attendanceListsForCourse, allRecords] = await Promise.all([
+			db.select({
 				id: courses.id,
 				courseName: courses.courseName,
 				description: courses.description,
 				startDate: courses.startDate
 			})
 			.from(courses)
-			.where(eq(courses.id, courseId));
+			.where(eq(courses.id, courseId)),
 
-		if (!course) {
-			throw error(404, 'Curso não encontrado');
-		}
-
-		// Get all enrolled students
-		const enrolledStudents = await db
-			.select({
+			db.select({
 				participantId: courseEnrollments.participantId,
 				participantName: participants.name,
 				participantPhone: participants.phone,
@@ -40,11 +34,9 @@ export const load = async ({ params }: any) => {
 					eq(courseEnrollments.courseId, courseId),
 					eq(courseEnrollments.status, 'active')
 				)
-			);
+			),
 
-		// Get all attendance lists for this course
-		const attendanceListsForCourse = await db
-			.select({
+			db.select({
 				id: attendanceLists.id,
 				date: attendanceLists.date,
 				notes: attendanceLists.notes,
@@ -52,11 +44,9 @@ export const load = async ({ params }: any) => {
 			})
 			.from(attendanceLists)
 			.where(eq(attendanceLists.courseId, courseId))
-			.orderBy(attendanceLists.date);
+			.orderBy(attendanceLists.date),
 
-		// Get all attendance records for this course
-		const allRecords = await db
-			.select({
+			db.select({
 				listId: attendanceRecords.listId,
 				participantId: attendanceRecords.participantId,
 				status: attendanceRecords.status,
@@ -65,7 +55,13 @@ export const load = async ({ params }: any) => {
 			})
 			.from(attendanceRecords)
 			.innerJoin(attendanceLists, eq(attendanceRecords.listId, attendanceLists.id))
-			.where(eq(attendanceLists.courseId, courseId));
+			.where(eq(attendanceLists.courseId, courseId))
+		]);
+
+		const course = courseResult[0];
+		if (!course) {
+			throw error(404, 'Curso não encontrado');
+		}
 
 		// Calculate attendance stats for each student
 		const studentsWithStats = enrolledStudents.map((student) => {
@@ -87,6 +83,7 @@ export const load = async ({ params }: any) => {
 					excused,
 					attendanceRate
 				},
+				attendance: studentRecords,
 				records: studentRecords
 			};
 		});

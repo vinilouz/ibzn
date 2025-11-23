@@ -4,6 +4,7 @@ import { courses, courseEnrollments, facilitators, rooms } from '$lib/server/db/
 import { eq, desc, sql } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
 import { z } from 'zod';
+import { cache } from '$lib/server/cache';
 
 const courseSchema = z.object({
   courseName: z.string().min(1, 'Nome é obrigatório'),
@@ -49,8 +50,10 @@ async function updateIsFull(courseId: number) {
 
 export const load: PageServerLoad = async () => {
   try {
-    // Executar queries em paralelo para melhor performance
-    const [allCourses, allFacilitators, allRooms] = await Promise.all([
+    // Cache com queries em paralelo para melhor performance
+    const [allCourses, allFacilitators, allRooms] = await cache.get(
+      'cursos:data',
+      async () => Promise.all([
       // Query dos cursos
       db
         .select({
@@ -104,7 +107,9 @@ export const load: PageServerLoad = async () => {
         })
         .from(rooms)
         .where(eq(rooms.status, true))
-    ]);
+      ]),
+      15000 // 15 segundos
+    );
 
     return {
       courses: allCourses,
@@ -173,6 +178,8 @@ export const actions: Actions = {
 
       console.log('Curso criado:', result);
 
+      cache.invalidate('cursos:data');
+      cache.invalidate('painel:stats');
       return { success: true };
     } catch (error) {
       console.error('Erro ao criar curso:', error);
@@ -235,6 +242,8 @@ export const actions: Actions = {
 
       await updateIsFull(id);
 
+      cache.invalidate('cursos:data');
+      cache.invalidate('painel:stats');
       return { success: true };
     } catch (error) {
       console.error('Erro ao atualizar curso:', error);
@@ -255,6 +264,8 @@ export const actions: Actions = {
 
       console.log('Curso deletado:', result);
 
+      cache.invalidate('cursos:data');
+      cache.invalidate('painel:stats');
       return { success: true };
     } catch (error) {
       console.error('Erro ao deletar curso:', error);

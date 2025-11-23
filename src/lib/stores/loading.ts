@@ -1,11 +1,24 @@
 import { writable } from 'svelte/store';
 
-export const isLoading = writable(false);
+interface LoadingState {
+	isLoading: boolean;
+	message: string;
+}
 
-export function showLoading() {
-	isLoading.set(true);
+const initialState: LoadingState = {
+	isLoading: false,
+	message: 'Processando...'
+};
+
+export const loadingStore = writable<LoadingState>(initialState);
+
+export function showLoading(message: string = 'Processando...') {
+	loadingStore.set({ isLoading: true, message });
 }
 
 export function hideLoading() {
-	isLoading.set(false);
+	loadingStore.set({ isLoading: false, message: '' });
 }
+
+// Backward compatibility
+export const isLoading = writable(false);

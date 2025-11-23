@@ -9,9 +9,7 @@ import { cache } from '$lib/server/cache';
 
 export const load = async () => {
 	try {
-		const [enrollments, allCourses, allParticipants] = await cache.get(
-			'enrollments:list',
-			async () => Promise.all([
+		const [enrollments, allCourses, allParticipants] = await Promise.all([
 			db
 				.select({
 					id: courseEnrollments.id,
@@ -42,9 +40,7 @@ export const load = async () => {
 				name: participants.name,
 				phone: participants.phone
 			}).from(participants)
-		]),
-		30000
-	);
+		]);
 
 		return {
 			enrollments,

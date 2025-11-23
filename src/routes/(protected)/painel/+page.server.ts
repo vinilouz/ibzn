@@ -40,7 +40,7 @@ export const load: PageServerLoad = async (event) => {
 				])
 			]);
 		},
-		30000
+		10000 // 10 segundos - atualização mais rápida
 	);
 
 	const [basicCounts, paymentStats, enrollmentStats] = statsResult;

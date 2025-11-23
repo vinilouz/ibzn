@@ -57,7 +57,7 @@
 			</div>
 		</CardHeader>
 		<CardContent>
-			<form method="POST" action="?/updateProfile" use:enhance={enhanceWithLoadingAndCallback(handleSuccess)} class="space-y-4">
+			<form method="POST" action="?/updateProfile" use:enhance={enhanceWithLoadingAndCallback({ loadingMessage: 'Atualizando perfil...', onSuccess: handleSuccess })} class="space-y-4">
 				<div class="grid gap-4 md:grid-cols-2">
 					<div class="space-y-2">
 						<Label for="name">Nome Completo *</Label>
@@ -110,7 +110,7 @@
 			</div>
 		</CardHeader>
 		<CardContent>
-			<form method="POST" action="?/changePassword" use:enhance={enhanceWithLoadingAndCallback(handleSuccess)} class="space-y-4">
+			<form method="POST" action="?/changePassword" use:enhance={enhanceWithLoadingAndCallback({ loadingMessage: 'Alterando senha...', onSuccess: handleSuccess })} class="space-y-4">
 				<div class="space-y-2">
 					<Label for="currentPassword">Senha Atual *</Label>
 					<Input
@@ -184,7 +184,7 @@
 							<p class="text-sm text-muted-foreground">{user.email}</p>
 						</div>
 						<div class="flex items-center gap-2">
-							<form method="POST" action="?/updateUserRole" use:enhance={enhanceWithLoadingAndCallback(handleSuccess)}>
+							<form method="POST" action="?/updateUserRole" use:enhance={enhanceWithLoadingAndCallback({ loadingMessage: 'Atualizando função...', onSuccess: handleSuccess })}>
 								<input type="hidden" name="userId" value={user.id} />
 								<select 
 									name="role" 
@@ -256,7 +256,7 @@
 				</p>
 			</div>
 
-			<form method="POST" action="?/toggleMaintenance" use:enhance={enhanceWithLoadingAndCallback(() => {})}>
+			<form method="POST" action="?/toggleMaintenance" use:enhance={enhanceWithLoadingAndCallback({ loadingMessage: 'Atualizando modo manutenção...' })}>
 				<input type="hidden" name="enabled" value={(!data.maintenanceMode).toString()} />
 				<Button 
 					type="submit" 
@@ -298,7 +298,7 @@
 					</Button>
 				</div>
 			{:else}
-				<form method="POST" action="?/deleteAccount" use:enhance={enhanceWithLoadingAndCallback(handleSuccess)} class="space-y-4">
+				<form method="POST" action="?/deleteAccount" use:enhance={enhanceWithLoadingAndCallback({ loadingMessage: 'Excluindo conta...', onSuccess: handleSuccess })} class="space-y-4">
 					<div class="rounded-lg bg-red-50 border border-red-200 p-4">
 						<p class="text-sm text-red-800 font-semibold mb-2">⚠️ Confirmação de Exclusão</p>
 						<p class="text-sm text-red-800">Esta ação é permanente e não pode ser desfeita.</p>

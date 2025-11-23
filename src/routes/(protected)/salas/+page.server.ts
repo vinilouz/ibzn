@@ -5,6 +5,7 @@ import { eq, desc } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
 import { logger } from '$lib/utils/logger';
 import { z } from 'zod';
+import { cache } from '$lib/server/cache';
 
 const roomSchema = z.object({
     name: z.string().min(1, 'Nome é obrigatório').max(255),
@@ -18,15 +19,18 @@ const roomSchema = z.object({
 
 export const load: PageServerLoad = async () => {
     try {
-        const allRooms = await db
-            .select()
-            .from(rooms)
-            .orderBy(desc(rooms.status), rooms.createdAt);
-
-        const allFacilitators = await db
-            .select({ id: facilitators.id, name: facilitators.name })
-            .from(facilitators)
-            .orderBy(facilitators.name);
+        const [allRooms, allFacilitators] = await cache.get(
+            'salas:data',
+            async () => {
+                return Promise.all([
+                    db.select().from(rooms).orderBy(desc(rooms.status), rooms.createdAt),
+                    db.select({ id: facilitators.id, name: facilitators.name })
+                        .from(facilitators)
+                        .orderBy(facilitators.name)
+                ]);
+            },
+            15000 // 15 segundos
+        );
 
         return { rooms: allRooms, facilitators: allFacilitators };
     } catch (error) {
@@ -60,6 +64,8 @@ export const actions: Actions = {
             }
 
             await db.insert(rooms).values(validated.data);
+            cache.invalidate('salas:data');
+            cache.invalidate('painel:stats');
             return { success: true };
         } catch (error) {
             logger.error('Erro ao criar sala:', error);
@@ -95,6 +101,8 @@ export const actions: Actions = {
                 .set(validated.data)
                 .where(eq(rooms.id, id));
 
+            cache.invalidate('salas:data');
+            cache.invalidate('painel:stats');
             return { success: true };
         } catch (error) {
             logger.error('Erro ao atualizar sala:', error);
@@ -108,6 +116,8 @@ export const actions: Actions = {
             const id = parseInt(formData.get('id') as string);
 
             await db.delete(rooms).where(eq(rooms.id, id));
+            cache.invalidate('salas:data');
+            cache.invalidate('painel:stats');
             return { success: true };
         } catch (error) {
             logger.error('Erro ao deletar sala:', error);

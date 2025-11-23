@@ -7,8 +7,8 @@ type CacheEntry<T> = {
 
 class QueryCache {
 	private cache = new Map<string, CacheEntry<any>>();
-	private defaultTTL = 90000;
-	private maxSize = 150;
+	private defaultTTL = 90000; // 90 segundos
+	private maxSize = 200; // Aumentado para mais cache
 
 	async get<T>(
 		key: string,

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
+	import { enhanceWithLoadingAndCallback } from '$lib/utils/enhance';
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
@@ -34,6 +35,14 @@
 	let selectedDate = $state('');
 	let listNotes = $state('');
 	let expandedStudentId = $state<number | null>(null);
+	
+	// Estado local para atualização otimista
+	let studentsData = $state(data.students || []);
+	
+	// Sincronizar com data quando mudar
+	$effect(() => {
+		studentsData = data.students || [];
+	});
 
 	const statusColors: Record<AttendanceStatus, string> = {
 		present: 'bg-green-100 text-green-800',
@@ -75,16 +84,59 @@
 	function toggleStudentDetails(participantId: number) {
 		expandedStudentId = expandedStudentId === participantId ? null : participantId;
 	}
+	
+	// Atualização otimista da presença
+	function updateAttendanceOptimistically(
+		participantId: number,
+		listId: number,
+		newStatus: AttendanceStatus
+	) {
+		studentsData = studentsData.map((student: any) => {
+			if (student.participantId !== participantId) return student;
+			
+			// Encontrar o registro atual para esta lista
+			const currentRecord = student.attendance.find((a: any) => a.listId === listId);
+			const oldStatus = currentRecord?.status || null;
+			
+			// Atualizar estatísticas
+			const stats = { ...student.stats };
+			
+			// Remover estatística antiga (se existir)
+			if (oldStatus === 'present') stats.present = Math.max(0, stats.present - 1);
+			else if (oldStatus === 'late') stats.late = Math.max(0, stats.late - 1);
+			else if (oldStatus === 'absent') stats.absent = Math.max(0, stats.absent - 1);
+			else if (oldStatus === 'excused') stats.excused = Math.max(0, stats.excused - 1);
+			
+			// Adicionar nova estatística
+			if (newStatus === 'present') stats.present++;
+			else if (newStatus === 'late') stats.late++;
+			else if (newStatus === 'absent') stats.absent++;
+			else if (newStatus === 'excused') stats.excused++;
+			
+			// Recalcular porcentagem
+			const totalClasses = data.attendanceLists?.length || 0;
+			stats.attendanceRate = totalClasses > 0
+				? (((stats.present + stats.late) / totalClasses) * 100).toFixed(1)
+				: '0.0';
+			
+			// Atualizar registro de presença
+			const attendance = student.attendance.map((a: any) => 
+				a.listId === listId ? { ...a, status: newStatus } : a
+			);
+			
+			return { ...student, stats, attendance };
+		});
+	}
 
 	const courseStats = $derived.by(() => {
-		const totalStudents = data.students?.length || 0;
+		const totalStudents = studentsData?.length || 0;
 		const totalClasses = data.attendanceLists?.length || 0;
 		
 		if (totalStudents === 0) {
 			return { totalStudents, totalClasses, averageAttendance: '0.0' };
 		}
 
-		const totalPresences = data.students.reduce((sum: number, student: any) => 
+		const totalPresences = studentsData.reduce((sum: number, student: any) => 
 			sum + student.stats.present + student.stats.late, 0
 		);
 		
@@ -177,7 +229,14 @@
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
-				<form method="POST" action="?/createAttendanceList" use:enhance class="space-y-4">
+				<form method="POST" action="?/createAttendanceList" use:enhance={enhanceWithLoadingAndCallback({
+					loadingMessage: 'Criando lista de presença...',
+					onSuccess: () => {
+						showCreateListForm = false;
+						selectedDate = '';
+						listNotes = '';
+					}
+				})} class="space-y-4">
 					<input type="hidden" name="courseId" value={data.course?.id} />
 					
 					<div class="grid gap-4 md:grid-cols-2">
@@ -227,9 +286,9 @@
 			</CardDescription>
 		</CardHeader>
 		<CardContent>
-			{#if data.students && data.students.length > 0}
+			{#if studentsData && studentsData.length > 0}
 				<div class="space-y-4">
-					{#each data.students as student}
+					{#each studentsData as student}
 						<div class="rounded-lg border p-4">
 							<button 
 								type="button"
@@ -307,7 +366,16 @@
 														</TableCell>
 														<TableCell>
 															<div class="flex gap-1">
-																<form method="POST" action="?/markAttendanceForDate" use:enhance>
+																<form 
+																	method="POST" 
+																	action="?/markAttendanceForDate" 
+																	use:enhance={() => {
+																		updateAttendanceOptimistically(student.participantId, list.id, 'present');
+																		return async ({ update }) => {
+																			await update({ reset: false });
+																		};
+																	}}
+																>
 																	<input type="hidden" name="listId" value={list.id} />
 																	<input type="hidden" name="participantId" value={student.participantId} />
 																	<input type="hidden" name="status" value="present" />
@@ -322,7 +390,16 @@
 																	</Button>
 																</form>
 
-																<form method="POST" action="?/markAttendanceForDate" use:enhance>
+																<form 
+																	method="POST" 
+																	action="?/markAttendanceForDate"
+																	use:enhance={() => {
+																		updateAttendanceOptimistically(student.participantId, list.id, 'late');
+																		return async ({ update }) => {
+																			await update({ reset: false });
+																		};
+																	}}
+																>
 																	<input type="hidden" name="listId" value={list.id} />
 																	<input type="hidden" name="participantId" value={student.participantId} />
 																	<input type="hidden" name="status" value="late" />
@@ -337,7 +414,16 @@
 																	</Button>
 																</form>
 
-																<form method="POST" action="?/markAttendanceForDate" use:enhance>
+																<form 
+																	method="POST" 
+																	action="?/markAttendanceForDate"
+																	use:enhance={() => {
+																		updateAttendanceOptimistically(student.participantId, list.id, 'absent');
+																		return async ({ update }) => {
+																			await update({ reset: false });
+																		};
+																	}}
+																>
 																	<input type="hidden" name="listId" value={list.id} />
 																	<input type="hidden" name="participantId" value={student.participantId} />
 																	<input type="hidden" name="status" value="absent" />
@@ -352,7 +438,16 @@
 																	</Button>
 																</form>
 
-																<form method="POST" action="?/markAttendanceForDate" use:enhance>
+																<form 
+																	method="POST" 
+																	action="?/markAttendanceForDate"
+																	use:enhance={() => {
+																		updateAttendanceOptimistically(student.participantId, list.id, 'excused');
+																		return async ({ update }) => {
+																			await update({ reset: false });
+																		};
+																	}}
+																>
 																	<input type="hidden" name="listId" value={list.id} />
 																	<input type="hidden" name="participantId" value={student.participantId} />
 																	<input type="hidden" name="status" value="excused" />

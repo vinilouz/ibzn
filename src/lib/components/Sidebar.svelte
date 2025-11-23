@@ -6,7 +6,7 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import { authClient } from '$lib/auth.client';
 	import Logo from '$lib/components/Logo.svelte';
-	import { goto } from '$app/navigation';
+	import { goto, preloadData } from '$app/navigation';
 	import { slide } from 'svelte/transition';
 
 	let {
@@ -209,6 +209,7 @@
 						<SidebarMenuButton
 							class="w-full justify-start h-12 rounded-lg transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:bg-sidebar-accent focus:text-sidebar-accent-foreground {$page.url.pathname === item.url ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm' : ''}"
 							onclick={() => navigateTo(item.url)}
+							onmouseenter={() => preloadData(item.url)}
 						>
 							<IconComponent class="h-5 w-5 mr-3" />
 							<span class="text-sm font-medium">{item.title}</span>
@@ -223,6 +224,7 @@
 				<SidebarMenuButton
 					class="w-full justify-start h-12 rounded-lg transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus:bg-sidebar-accent focus:text-sidebar-accent-foreground {$page.url.pathname === '/configuracoes' ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm' : ''}"
 					onclick={() => navigateTo('/configuracoes')}
+					onmouseenter={() => preloadData('/configuracoes')}
 				>
 					<Settings class="h-5 w-5 mr-3" />
 					<span class="text-sm font-medium">Configurações</span>

@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import { goto, invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
+	import { enhanceWithLoadingAndCallback } from '$lib/utils/enhance';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -155,19 +156,15 @@
 		goto('/cursos?view=create');
 	}
 
-	function handleFormSubmit() {
-		return async ({ result, update }: any) => {
-			// Atualizar dados no servidor
-			await update();
-
-			if (result.type === 'success') {
-				await invalidateAll();
-				// Limpar form e navegar
-				resetForm();
-				goto('/cursos?view=list');
-			}
-		};
-	}
+	const handleFormSubmit = () => enhanceWithLoadingAndCallback({
+		loadingMessage: isEditing ? 'Atualizando curso...' : 'Criando curso...',
+		invalidate: true,
+		onSuccess: async () => {
+			await invalidateAll();
+			resetForm();
+			goto('/cursos?view=list');
+		}
+	});
 
 	function handleDelete() {
 		return async ({ cancel, result, update }: any) => {
@@ -377,7 +374,7 @@
 				<form
 					method="POST"
 					action="?/{isEditing ? 'update' : 'create'}"
-					use:enhance={handleFormSubmit}
+					use:enhance={handleFormSubmit()}
 					class="space-y-6"
 				>
 					{#if isEditing}
@@ -474,7 +471,7 @@
 									name="teacher"
 									bind:value={formData.teacher}
 									required
-									class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+									class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
 								>
 									<option value="">Selecione um professor</option>
 									{#each data.facilitators as facilitator}
@@ -490,7 +487,7 @@
 									name="room"
 									bind:value={formData.room}
 									required
-									class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+									class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
 								>
 									<option value="">Selecione uma sala</option>
 									{#each data.rooms as room}

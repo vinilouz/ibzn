@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
+	import { enhanceWithLoadingAndCallback } from '$lib/utils/enhance';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -163,13 +164,13 @@
 		localPreview = null;
 	}
 
-	function handleFormSubmit() {
-		return async ({ update }: any) => {
-			await update();
+	const handleFormSubmit = () => enhanceWithLoadingAndCallback({
+		loadingMessage: isEditing ? 'Atualizando sala...' : 'Criando sala...',
+		onSuccess: () => {
 			resetForm();
 			goto('/salas?view=list');
-		};
-	}
+		}
+	});
 
 	function handleDelete() {
 		return (e: Event) => {
@@ -192,18 +193,17 @@
 
 			if (!searchTerm.trim()) return statusMatch;
 
-			const term = searchTerm.toLowerCase();
 			let searchMatch = false;
 
 			switch (searchBy) {
 				case 'name':
-					searchMatch = room.name.toLowerCase().includes(term);
+					searchMatch = room.name.toLowerCase().includes(searchTerm.toLowerCase());
 					break;
 				case 'number':
-					searchMatch = room.number?.toString().includes(searchTerm);
+					searchMatch = room.number?.toString().includes(searchTerm) ?? false;
 					break;
 				case 'capacity':
-					searchMatch = room.capacity?.toString().includes(searchTerm);
+					searchMatch = room.capacity?.toString().includes(searchTerm) ?? false;
 					break;
 				default:
 					searchMatch = true;
@@ -374,7 +374,7 @@
 				<form
 					method="POST"
 					action="?/{isEditing ? 'update' : 'create'}"
-					use:enhance={handleFormSubmit}
+					use:enhance={handleFormSubmit()}
 					class="space-y-6"
 				>
 					{#if isEditing}
@@ -391,6 +391,7 @@
 								bind:value={formData.name}
 								required
 								placeholder="Ex: Sala Principal"
+								
 							/>
 						</div>
 
@@ -403,6 +404,7 @@
 								bind:value={formData.number}
 								required
 								placeholder="Ex: 101"
+								
 							/>
 						</div>
 
@@ -414,6 +416,7 @@
 								name="capacity"
 								bind:value={formData.capacity}
 								placeholder="Ex: 30"
+								
 							/>
 						</div>
 
@@ -455,6 +458,7 @@
 							bind:value={formData.description}
 							placeholder="Descreva a sala, seus recursos, etc..."
 							rows={4}
+							
 						/>
 					</div>
 
@@ -510,10 +514,12 @@
 					</div>
 
 					<div class="flex gap-2 pt-4">
-						<Button type="submit">
+						<Button type="submit" disabled={uploadingImage}>
 							{isEditing ? 'Atualizar Sala' : 'Criar Sala'}
 						</Button>
-						<Button type="button" variant="outline" onclick={cancelEdit}>Cancelar</Button>
+						<Button type="button" variant="outline" onclick={cancelEdit}>
+							Cancelar
+						</Button>
 					</div>
 				</form>
 			</CardContent>

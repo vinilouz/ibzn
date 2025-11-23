@@ -3,10 +3,39 @@
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import { Separator } from '$lib/components/ui/separator';
 	import { ModeWatcher } from 'mode-watcher'; 
-	import ThemeButton from '$lib/components/theme-button.svelte'; 
+	import ThemeButton from '$lib/components/theme-button.svelte';
+	import { preloadData } from '$app/navigation';
+	import { onMount } from 'svelte';
 
 	let { children, data } = $props();
 	const user = data.user;
+
+	// Preload rotas mais acessadas quando montar o layout
+	onMount(() => {
+		// Preload imediato das rotas principais para navegação instantânea
+		const preloadRoutes = async () => {
+			const routes = [
+				'/painel',
+				'/salas',
+				'/cursos',
+				'/calendar',
+				'/matriculas',
+				'/presenca',
+				'/payments',
+				'/configuracoes'
+			];
+			
+			if (user?.role === 'admin') {
+				routes.push('/financeiro');
+			}
+			
+			// Preload em paralelo todas as rotas
+			await Promise.all(routes.map(route => preloadData(route)));
+		};
+		
+		// Delay mínimo para não impactar carregamento inicial
+		setTimeout(preloadRoutes, 50);
+	});
 
 	const allSidebarItems = [
 		{

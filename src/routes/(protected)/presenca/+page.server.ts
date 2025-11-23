@@ -5,36 +5,25 @@ import { logger } from '$lib/utils/logger';
 
 export const load = async () => {
 	try {
-		const allCourses = await db
+		// Query otimizada com JOIN ao invés de N+1 queries
+		const coursesWithStats = await db
 			.select({
 				id: courses.id,
 				courseName: courses.courseName,
 				description: courses.description,
 				capacity: courses.capacity,
-				startDate: courses.startDate
+				startDate: courses.startDate,
+				totalStudents: count(courseEnrollments.id)
 			})
-			.from(courses);
-
-		const coursesWithStats = await Promise.all(
-			allCourses.map(async (course) => {
-				const enrollments = await db
-					.select({
-						count: count()
-					})
-					.from(courseEnrollments)
-					.where(
-						and(
-							eq(courseEnrollments.courseId, course.id),
-							eq(courseEnrollments.status, 'active')
-						)
-					);
-
-				return {
-					...course,
-					totalStudents: enrollments[0]?.count || 0
-				};
-			})
-		);
+			.from(courses)
+			.leftJoin(
+				courseEnrollments,
+				and(
+					eq(courses.id, courseEnrollments.courseId),
+					eq(courseEnrollments.status, 'active')
+				)
+			)
+			.groupBy(courses.id);
 
 		return {
 			courses: coursesWithStats
