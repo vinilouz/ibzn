@@ -12,6 +12,8 @@
 		TableRow
 	} from '$lib/components/ui/table';
 	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
+	import { enhanceWithLoadingAndCallback } from '$lib/utils/enhance';
 	import { Plus, DollarSign, Check, X, Clock, RefreshCw, Search } from 'lucide-svelte';
 	import Pagination from '$lib/components/Pagination.svelte';
 
@@ -321,14 +323,13 @@
 						<form
 							method="POST"
 							action="?/updateStatus"
-							use:enhance={() => {
-								return async ({ result, update }) => {
-									if (result.type === 'success') {
-										closeDrawer();
-									}
-									await update();
-								};
-							}}
+							use:enhance={enhanceWithLoadingAndCallback({
+								loadingMessage: 'Atualizando status do pagamento...',
+								onSuccess: async () => {
+									closeDrawer();
+									await invalidateAll(); // Invalida todas as rotas incluindo financeiro
+								}
+							})}
 						>
 							<input type="hidden" name="id" value={selectedPayment.payment.id} />
 
@@ -365,14 +366,13 @@
 						<form
 							method="POST"
 							action="?/delete"
-							use:enhance={() => {
-								return async ({ result, update }) => {
-									if (result.type === 'success') {
-										closeDrawer();
-									}
-									await update();
-								};
-							}}
+							use:enhance={enhanceWithLoadingAndCallback({
+								loadingMessage: 'Deletando pagamento...',
+								onSuccess: async () => {
+									closeDrawer();
+									await invalidateAll(); // Invalida todas as rotas incluindo financeiro
+								}
+							})}
 						>
 							<input type="hidden" name="id" value={selectedPayment.payment.id} />
 							<Button variant="destructive" type="submit" class="w-full">Deletar Pagamento</Button>
@@ -383,14 +383,13 @@
 					<form
 						method="POST"
 						action="?/create"
-						use:enhance={() => {
-							return async ({ result, update }) => {
-								if (result.type === 'success') {
-									closeDrawer();
-								}
-								await update();
-							};
-						}}
+						use:enhance={enhanceWithLoadingAndCallback({
+							loadingMessage: 'Criando pagamento...',
+							onSuccess: async () => {
+								closeDrawer();
+								await invalidateAll(); // Invalida todas as rotas incluindo financeiro
+							}
+						})}
 						class="space-y-4"
 					>
 						<div>
