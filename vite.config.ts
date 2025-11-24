@@ -21,10 +21,7 @@ export default defineConfig({
 						if (id.includes('drizzle')) return 'db';
 						return 'vendor';
 					}
-				},
-				assetFileNames: 'assets/[name]-[hash][extname]',
-				chunkFileNames: 'chunks/[name]-[hash].js',
-				entryFileNames: 'entries/[name]-[hash].js'
+				}
 			}
 		}
 	},

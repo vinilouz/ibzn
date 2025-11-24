@@ -38,11 +38,6 @@
 	}
 
 	let { data }: { data: PageData } = $props();
-    $effect(() => {
-		console.log('Data recebida:', data);
-		console.log('Facilitators:', data.facilitators);
-		console.log('Rooms:', data.rooms);
-	});
 
 	let editingCourse = $state<number | null>(null);
 	let currentPage = $state(1);

@@ -8,7 +8,6 @@
 	let loadingMessage = $state('Carregando...');
 	let minDisplayTimeout: ReturnType<typeof setTimeout> | null = null;
 
-	// Show overlay when navigating OR when manually triggered
 	$effect(() => {
 		const isNavigating = $navigating !== null;
 		const isManualLoading = $loadingStore.isLoading;
@@ -18,13 +17,11 @@
 			showOverlay = true;
 			loadingMessage = isManualLoading ? $loadingStore.message : 'Carregando...';
 			
-			// Clear any existing timeout
 			if (minDisplayTimeout) {
 				clearTimeout(minDisplayTimeout);
 				minDisplayTimeout = null;
 			}
 		} else if (showOverlay) {
-			// When navigation/loading ends, keep showing for minimum 200ms for smooth transition
 			minDisplayTimeout = setTimeout(() => {
 				showOverlay = false;
 				minDisplayTimeout = null;
@@ -32,7 +29,6 @@
 		}
 	});
 
-	// Cleanup on component destroy
 	onDestroy(() => {
 		if (minDisplayTimeout) {
 			clearTimeout(minDisplayTimeout);
@@ -50,10 +46,8 @@
 			class="relative bg-card p-8 rounded-xl shadow-2xl border border-border"
 			transition:scale={{ duration: 200, start: 0.95 }}
 		>
-			<!-- Spinner Circle -->
 			<div class="w-16 h-16 border-4 border-muted border-t-primary rounded-full animate-spin mx-auto"></div>
 			
-			<!-- Loading text with message -->
 			<p class="mt-4 text-base font-medium text-foreground text-center min-w-[200px]">
 				{loadingMessage}
 			</p>

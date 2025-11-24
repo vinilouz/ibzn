@@ -1,7 +1,6 @@
 import type { Role } from './middleware/auth';
 
 export const CAPABILITIES = {
-	// Courses (Cursos)
 	COURSES_VIEW: 'courses.view',
 	COURSES_CREATE: 'courses.create',
 	COURSES_UPDATE: 'courses.update',
@@ -9,7 +8,6 @@ export const CAPABILITIES = {
 	COURSES_ENROLL: 'courses.enroll',
 	COURSES_MANAGE_ENROLLMENTS: 'courses.manage_enrollments',
 
-	// Rooms (Salas)
 	ROOMS_VIEW: 'rooms.view',
 	ROOMS_CREATE: 'rooms.create',
 	ROOMS_UPDATE: 'rooms.update',
@@ -21,7 +19,6 @@ export const CAPABILITIES = {
 	USERS_DELETE: 'users.delete',
 	USERS_MANAGE_ROLES: 'users.manage_roles',
 
-	// System (Sistema)
 	SYSTEM_SETTINGS: 'system.settings',
 	SYSTEM_LOGS: 'system.logs',
 	SYSTEM_BACKUP: 'system.backup'
@@ -29,16 +26,8 @@ export const CAPABILITIES = {
 
 export type Capability = (typeof CAPABILITIES)[keyof typeof CAPABILITIES];
 
-// ============================================
-// Mapeamento: Role -> Capabilities
-// ============================================
-
 export const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
-	/**
-	 * Admin: Acesso completo a tudo
-	 */
 	admin: [
-		// Courses
 		CAPABILITIES.COURSES_VIEW,
 		CAPABILITIES.COURSES_CREATE,
 		CAPABILITIES.COURSES_UPDATE,
@@ -46,66 +35,47 @@ export const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
 		CAPABILITIES.COURSES_ENROLL,
 		CAPABILITIES.COURSES_MANAGE_ENROLLMENTS,
 
-		// Rooms
 		CAPABILITIES.ROOMS_VIEW,
 		CAPABILITIES.ROOMS_CREATE,
 		CAPABILITIES.ROOMS_UPDATE,
 		CAPABILITIES.ROOMS_DELETE,
 
-		// Users
 		CAPABILITIES.USERS_VIEW,
 		CAPABILITIES.USERS_CREATE,
 		CAPABILITIES.USERS_UPDATE,
 		CAPABILITIES.USERS_DELETE,
 		CAPABILITIES.USERS_MANAGE_ROLES,
 
-		// System
 		CAPABILITIES.SYSTEM_SETTINGS,
 		CAPABILITIES.SYSTEM_LOGS,
 		CAPABILITIES.SYSTEM_BACKUP
 	],
 
-	/**
-	 * Manager: Pode gerenciar cursos e salas, mas não usuários
-	 */
 	manager: [
-		// Courses - acesso completo
 		CAPABILITIES.COURSES_VIEW,
 		CAPABILITIES.COURSES_CREATE,
 		CAPABILITIES.COURSES_UPDATE,
 		CAPABILITIES.COURSES_DELETE,
 		CAPABILITIES.COURSES_MANAGE_ENROLLMENTS,
 
-		// Rooms - acesso completo
 		CAPABILITIES.ROOMS_VIEW,
 		CAPABILITIES.ROOMS_CREATE,
 		CAPABILITIES.ROOMS_UPDATE,
 		CAPABILITIES.ROOMS_DELETE,
 
-		// Users - apenas visualizar
 		CAPABILITIES.USERS_VIEW
 	],
 
-	/**
-	 * User: Usuário comum, pode visualizar e se inscrever em cursos
-	 */
 	user: [
-		// Courses - visualizar e se inscrever
 		CAPABILITIES.COURSES_VIEW,
 		CAPABILITIES.COURSES_ENROLL,
 
-		// Rooms - apenas visualizar
 		CAPABILITIES.ROOMS_VIEW
 	],
 
-	/**
-	 * Guest: Visitante, acesso mínimo
-	 */
 	guest: [
-		// Courses - apenas visualizar
 		CAPABILITIES.COURSES_VIEW,
 
-		// Rooms - apenas visualizar
 		CAPABILITIES.ROOMS_VIEW
 	]
 };
@@ -128,9 +98,6 @@ export function getRoleCapabilities(role: Role): Capability[] {
 	return ROLE_CAPABILITIES[role];
 }
 
-/**
- * Verifica se uma capability é válida
- */
 export function isValidCapability(capability: string): capability is Capability {
 	return Object.values(CAPABILITIES).includes(capability as Capability);
 }

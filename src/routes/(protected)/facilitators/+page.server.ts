@@ -13,9 +13,8 @@ export const load: PageServerLoad = async () => {
 
 export const actions: Actions = {
   create: async ({ request }) => {
-    console.log('Ação CREATE chamada');
     const form = await request.formData();
-    
+
     const values: any = {
       name: String(form.get('name') ?? ''),
       phone: String(form.get('phone') ?? ''),
@@ -36,16 +35,15 @@ export const actions: Actions = {
   },
 
   update: async ({ request }) => {
-    console.log('Ação UPDATE chamada');
     const form = await request.formData();
     const id = Number(form.get('id'));
-    
+
     const patch: any = {};
     if (form.get('name')) patch.name = String(form.get('name'));
     if (form.get('phone')) patch.phone = String(form.get('phone'));
     if (form.get('email')) patch.email = String(form.get('email'));
     if (form.get('role')) patch.role = String(form.get('role'));
-    
+
     if (form.get('birthdate')) {
       const d = new Date(String(form.get('birthdate')));
       if (!isNaN(d.getTime())) {
@@ -58,25 +56,17 @@ export const actions: Actions = {
   },
 
   delete: async ({ request }) => {
-    console.log('Ação DELETE chamada');
     const form = await request.formData();
     const id = Number(form.get('id'));
 
-    // Deletar/atualizar todos os registros relacionados antes de deletar o facilitador
-    // Isso é necessário porque algumas foreign keys não têm onDelete cascade configurado
-
-    // 1. Atualizar salas (setar facilitatorId como null ao invés de deletar)
     await db.update(rooms)
       .set({ facilitatorId: null })
       .where(eq(rooms.facilitatorId, id));
 
-    // 2. Atualizar appointments (setar facilitatorId como null ao invés de deletar)
     await db.update(appointments)
       .set({ facilitatorId: null })
       .where(eq(appointments.facilitatorId, id));
 
-    // 3. Verificar se há cursos usando este facilitador como teacher
-    // Não vamos deletar cursos, apenas impedimos a exclusão se houver cursos ativos
     const coursesUsingFacilitator = await db
       .select()
       .from(courses)
@@ -89,7 +79,6 @@ export const actions: Actions = {
       };
     }
 
-    // 5. Finalmente deletar o facilitador
     await db.delete(facilitators).where(eq(facilitators.id, id));
 
     return { success: true };

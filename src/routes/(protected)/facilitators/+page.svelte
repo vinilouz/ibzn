@@ -24,7 +24,6 @@
 	let currentPage = $state(1);
 	const itemsPerPage = 10;
 
-	// Client-side filtering
 	const filteredFacilitators = $derived.by(() => {
 		const facilitators = data.facilitators || [];
 		if (!searchQuery.trim()) return facilitators;
@@ -36,7 +35,6 @@
 		);
 	});
 
-	// Client-side pagination
 	const paginatedFacilitators = $derived.by(() => {
 		const start = (currentPage - 1) * itemsPerPage;
 		const end = start + itemsPerPage;
@@ -45,7 +43,6 @@
 
 	const totalPages = $derived(Math.ceil(filteredFacilitators.length / itemsPerPage));
 
-	// Reset to page 1 when search changes
 	let prevSearchQuery = '';
 	$effect(() => {
 		if (searchQuery !== prevSearchQuery) {
@@ -55,7 +52,6 @@
 	});
 
 	function openCreateDrawer() {
-		console.log('Abrindo drawer de criação');
 		selectedFacilitator = null;
 		isEditMode = false;
 		drawerOpen = true;

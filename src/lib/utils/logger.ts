@@ -1,11 +1,13 @@
-const DEBUG = true;
+// Only enable debug logs in development
+const DEBUG = import.meta.env.DEV;
 
 export const logger = {
 	log: (...args: any[]) => {
 		if (DEBUG) console.log('[LOG]', ...args);
 	},
 	error: (...args: any[]) => {
-		if (DEBUG) console.error('[ERROR]', ...args);
+		// Always log errors, even in production
+		console.error('[ERROR]', ...args);
 	},
 	warn: (...args: any[]) => {
 		if (DEBUG) console.warn('[WARN]', ...args);

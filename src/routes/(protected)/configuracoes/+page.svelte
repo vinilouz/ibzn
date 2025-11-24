@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 	import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -32,6 +33,19 @@
 	let showNewPassword = $state(false);
 	let showConfirmPassword = $state(false);
 	let showDeletePassword = $state(false);
+	let showNewManagerPassword = $state(false);
+	let showManagerPassword = $state(false);
+
+	let newManagerData = $state({
+		name: '',
+		email: '',
+		password: ''
+	});
+
+	let managerPasswordData = $state({
+		userId: '',
+		newPassword: ''
+	});
 
 	function handleSuccess() {
 		passwordData = {
@@ -304,6 +318,169 @@
 					</div>
 				{/each}
 			</div>
+		</CardContent>
+	</Card>
+
+	<!-- Criar Novo Manager (Admin Only) -->
+	<Card class="mb-6">
+		<CardHeader>
+			<div class="flex items-center gap-3">
+				<div class="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+					<Users class="h-6 w-6 text-green-600" />
+				</div>
+				<div>
+					<CardTitle>Criar Novo Manager</CardTitle>
+					<CardDescription>Adicione um novo usuário com permissões de gerenciamento</CardDescription>
+				</div>
+			</div>
+		</CardHeader>
+		<CardContent>
+			<form method="POST" action="?/createManager" use:enhance={enhanceWithLoadingAndCallback({ loadingMessage: 'Criando manager...', onSuccess: () => {
+				newManagerData = { name: '', email: '', password: '' };
+				handleSuccess();
+			}})} class="space-y-4">
+				<div class="grid gap-4 md:grid-cols-2">
+					<div class="space-y-2">
+						<Label for="newManagerName">Nome Completo *</Label>
+						<Input 
+							id="newManagerName" 
+							name="name" 
+							bind:value={newManagerData.name}
+							placeholder="Nome do manager"
+							required 
+						/>
+					</div>
+
+					<div class="space-y-2">
+						<Label for="newManagerEmail">Email *</Label>
+						<div class="relative">
+							<Mail class="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+							<Input 
+								id="newManagerEmail" 
+								name="email" 
+								type="email"
+								bind:value={newManagerData.email}
+								placeholder="email@exemplo.com"
+								class="pl-10"
+								required 
+							/>
+						</div>
+					</div>
+				</div>
+
+				<div class="space-y-2">
+					<Label for="newManagerPassword">Senha Inicial *</Label>
+					<div class="relative">
+						<Input
+							id="newManagerPassword"
+							name="password"
+							type={showNewManagerPassword ? 'text' : 'password'}
+							bind:value={newManagerData.password}
+							placeholder="Mínimo 8 caracteres"
+							required
+							class="pr-10"
+						/>
+						<button
+							type="button"
+							class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+							onclick={() => showNewManagerPassword = !showNewManagerPassword}
+						>
+							{#if showNewManagerPassword}
+								<EyeOff class="h-4 w-4" />
+							{:else}
+								<Eye class="h-4 w-4" />
+							{/if}
+						</button>
+					</div>
+					<p class="text-xs text-muted-foreground">O manager poderá alterar esta senha após o primeiro login</p>
+				</div>
+
+				<Button type="submit">Criar Manager</Button>
+			</form>
+		</CardContent>
+	</Card>
+
+	<!-- Trocar Senha de Manager (Admin Only) -->
+	<Card class="mb-6">
+		<CardHeader>
+			<div class="flex items-center gap-3">
+				<div class="flex h-12 w-12 items-center justify-center rounded-full bg-purple-100">
+					<Lock class="h-6 w-6 text-purple-600" />
+				</div>
+				<div>
+					<CardTitle>Trocar Senha de Manager</CardTitle>
+					<CardDescription>Redefina a senha de qualquer manager</CardDescription>
+				</div>
+			</div>
+		</CardHeader>
+		<CardContent>
+			<form method="POST" action="?/changeManagerPassword" use:enhance={() => {
+				showLoading('Alterando senha...');
+				return async ({ result, update }) => {
+					try {
+						await update({ reset: false });
+						if (result.type === 'success') {
+							managerPasswordData = { userId: '', newPassword: '' };
+							handleSuccess();
+							await invalidateAll();
+						}
+					} finally {
+						hideLoading();
+					}
+				};
+			}} class="space-y-4">
+				<div class="space-y-2">
+					<Label for="selectManager">Selecionar Manager *</Label>
+					<select 
+						id="selectManager"
+						name="userId" 
+						bind:value={managerPasswordData.userId}
+						class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+						required
+					>
+						<option value="">Selecione um manager</option>
+						{#each data.users.filter(u => u.role === 'manager') as manager}
+							<option value={manager.id}>{manager.name} ({manager.email})</option>
+						{/each}
+					</select>
+				</div>
+
+				<div class="space-y-2">
+					<Label for="managerNewPassword">Nova Senha *</Label>
+					<div class="relative">
+						<Input
+							id="managerNewPassword"
+							name="newPassword"
+							type={showManagerPassword ? 'text' : 'password'}
+							bind:value={managerPasswordData.newPassword}
+							placeholder="Mínimo 8 caracteres"
+							required
+							class="pr-10"
+						/>
+						<button
+							type="button"
+							class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+							onclick={() => showManagerPassword = !showManagerPassword}
+						>
+							{#if showManagerPassword}
+								<EyeOff class="h-4 w-4" />
+							{:else}
+								<Eye class="h-4 w-4" />
+							{/if}
+						</button>
+					</div>
+				</div>
+
+				<div class="rounded-lg bg-yellow-50 border border-yellow-200 p-3">
+					<p class="text-sm text-yellow-800">
+						<strong>Atenção:</strong> O manager será notificado sobre a alteração de senha.
+					</p>
+				</div>
+
+				<Button type="submit" disabled={!managerPasswordData.userId || !managerPasswordData.newPassword}>
+					Alterar Senha do Manager
+				</Button>
+			</form>
 		</CardContent>
 	</Card>
 

@@ -69,7 +69,6 @@
 	let currentPage = $state(1);
 	const itemsPerPage = 10;
 
-	// Client-side filtering
 	const filteredParticipants = $derived.by(() => {
 		const participants = data.participants || [];
 		if (!searchQuery.trim()) return participants;
@@ -81,7 +80,6 @@
 		);
 	});
 
-	// Client-side pagination
 	const paginatedParticipants = $derived.by(() => {
 		const start = (currentPage - 1) * itemsPerPage;
 		const end = start + itemsPerPage;
@@ -90,7 +88,6 @@
 
 	const totalPages = $derived(Math.ceil(filteredParticipants.length / itemsPerPage));
 
-	// Reset to page 1 when search changes
 	let prevSearchQuery = '';
 	$effect(() => {
 		if (searchQuery !== prevSearchQuery) {
