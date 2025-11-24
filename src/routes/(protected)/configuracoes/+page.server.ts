@@ -4,7 +4,6 @@ import { db } from '$lib/server/db';
 import { systemSettings } from '$lib/server/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { cache } from '$lib/server/cache';
-import bcryptjs from 'bcryptjs';
 
 export const load = async (event: any) => {
 	const session = await auth.api.getSession({ headers: event.request.headers });
@@ -71,7 +70,6 @@ export const actions: Actions = {
 	changePassword: async (event) => {
 		const session = await auth.api.getSession({ headers: event.request.headers });
 		if (!session) return fail(401, { message: 'Não autorizado' });
-		if (session.user.role !== 'admin') return fail(403, { message: 'Acesso negado. Apenas administradores podem alterar senha.' });
 
 		const formData = await event.request.formData();
 		const currentPassword = formData.get('currentPassword') as string;
@@ -203,52 +201,6 @@ export const actions: Actions = {
 				return fail(400, { message: 'Este email já está em uso' });
 			}
 			return fail(500, { message: 'Erro ao criar manager' });
-		}
-	},
-
-	changeManagerPassword: async (event) => {
-		const session = await auth.api.getSession({ headers: event.request.headers });
-		if (!session || session.user.role !== 'admin') return fail(403, { message: 'Acesso negado' });
-
-		const formData = await event.request.formData();
-		const userId = formData.get('userId') as string;
-		const newPassword = formData.get('newPassword') as string;
-
-		if (!userId || !newPassword) {
-			return fail(400, { message: 'Todos os campos são obrigatórios' });
-		}
-
-		if (newPassword.length < 8) {
-			return fail(400, { message: 'A senha deve ter no mínimo 8 caracteres' });
-		}
-
-		try {
-			const { user: userTable, account } = await import('$lib/server/db/schema');
-			const targetUser = await db.select().from(userTable).where(eq(userTable.id, userId)).limit(1);
-
-			if (!targetUser.length) {
-				return fail(400, { message: 'Usuário não encontrado' });
-			}
-
-			if (targetUser[0].role !== 'manager') {
-				return fail(400, { message: 'Apenas managers podem ter senha alterada por esta função' });
-			}
-
-			const hashedPassword = await bcryptjs.hash(newPassword, 10);
-
-			const result = await db.update(account)
-				.set({ password: hashedPassword })
-				.where(eq(account.userId, userId))
-				.returning();
-
-			if (!result || result.length === 0) {
-				return fail(500, { message: 'Erro: Conta não encontrada no banco de dados' });
-			}
-
-			return { success: true, message: 'Senha do manager alterada com sucesso!' };
-		} catch (error) {
-			console.error('[changeManagerPassword] Erro:', error);
-			return fail(500, { message: `Erro ao alterar senha: ${error instanceof Error ? error.message : 'Erro desconhecido'}` });
 		}
 	},
 

@@ -7,7 +7,12 @@ import { redirect } from '@sveltejs/kit';
 
 export const handle: Handle = async ({ event, resolve }) => {
 	if (event.url.pathname.startsWith('/auth')) {
-		return await auth.handler(event.request);
+		try {
+			return await auth.handler(event.request);
+		} catch (error) {
+			console.error('Erro no handler do Better Auth:', error);
+			throw error;
+		}
 	}
 
 	let shouldRedirect: string | null = null;

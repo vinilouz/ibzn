@@ -23,10 +23,11 @@ export const auth = betterAuth({
     }
   },
   basePath: '/auth',
-  baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:4173',
+  baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:5173',
   trustedOrigins: [
     'http://localhost:5173',
     'http://localhost:5174',
+    'http://localhost:4173',
     'http://localhost:3000'
   ],
   emailAndPassword: {
