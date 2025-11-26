@@ -80,7 +80,6 @@
 
 	const isEditing = $derived(editingCourse !== null);
 
-	// Usar $effect para carregar dados quando URL mudar
 	$effect(() => {
 		const view = $page.url.searchParams.get('view');
 		const id = $page.url.searchParams.get('id');
@@ -109,11 +108,9 @@
 				}, 0);
 			}
 		} else if (view === 'create') {
-			// Limpar form ao criar novo
 			editingCourse = null;
 			formData = { ...initialFormData };
 		} else if (view === 'list' || !view) {
-			// Limpar ao voltar para lista
 			editingCourse = null;
 			formData = { ...initialFormData };
 		}
@@ -164,10 +161,10 @@
 	});
 
 	function handleDelete() {
-		return async ({ result, update }: any) => {
-			// Confirmar antes de deletar
+		return async ({ cancel, result, update }: any) => {
 			const confirmed = confirm('Tem certeza que deseja excluir este curso?');
 			if (!confirmed) {
+				cancel();
 				return;
 			}
 
@@ -247,7 +244,6 @@
 		return filteredCourses.slice(start, end);
 	});
 
-	// Reset página quando filtros mudarem
 	$effect(() => {
 		searchTerm;
 		searchBy;

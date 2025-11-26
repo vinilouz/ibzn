@@ -67,7 +67,6 @@ export const actions: Actions = {
 			const amount = parseFloat(formData.get('amount') as string);
 			const notes = formData.get('notes') as string;
 
-			// Verificar se já existe matrícula ativa para este participante/curso
 			const existingEnrollment = await db
 				.select()
 				.from(courseEnrollments)
@@ -84,7 +83,6 @@ export const actions: Actions = {
 				return fail(400, { error: 'Este participante já está matriculado neste curso' });
 			}
 
-			// Verificar se já existe pagamento pendente para este participante/curso
 			const existingPayment = await db
 				.select()
 				.from(payments)

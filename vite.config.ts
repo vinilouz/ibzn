@@ -32,6 +32,9 @@ export default defineConfig({
 	server: {
 		fs: {
 			allow: ['..']
-		}
+		},
+		port: 4174,
+		strictPort: true,
+		host: true
 	}
 });

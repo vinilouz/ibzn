@@ -88,7 +88,6 @@
 
 	const totalEventPages = $derived(Math.ceil(filteredAllEvents.length / eventsPerPage));
 
-	// Reset page when search, filter, or selected date changes
 	let prevEventSearch = '';
 	let prevFilterByDate = false;
 	let prevSelectedDateStr = '';

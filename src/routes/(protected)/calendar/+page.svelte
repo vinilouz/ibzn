@@ -35,8 +35,7 @@
   let email = $state('');
   let phone = $state('');
   let reason = $state('');
-  
-  // Garantir que formName seja usado (evita warning do TypeScript)
+
   $effect(() => void formName);
   let startTime = $state('');
   let endTime = $state('');
@@ -169,7 +168,6 @@
     return filteredAppointments.slice(start, end);
   });
 
-  // Reset to page 1 when search or filter changes
   let prevSearchTerm = '';
   let prevShowSignedUp = false;
   let prevFilterDate = '';

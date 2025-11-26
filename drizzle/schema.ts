@@ -1,5 +1,4 @@
 import { pgTable, text, timestamp, foreignKey, integer, unique, date, doublePrecision, boolean, serial, time, varchar, pgEnum } from "drizzle-orm/pg-core"
-import { sql } from "drizzle-orm"
 
 export const attendanceStatus = pgEnum("attendance_status", ['present', 'absent', 'late', 'excused'])
 export const enrollmentStatus = pgEnum("enrollment_status", ['active', 'completed', 'cancelled', 'dropped', 'pending'])

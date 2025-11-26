@@ -459,7 +459,7 @@
 			{:else}
 				<form method="POST" action="?/deleteAccount" use:enhance={enhanceWithLoadingAndCallback({ loadingMessage: 'Excluindo conta...', onSuccess: handleSuccess })} class="space-y-4">
 					<div class="rounded-lg bg-red-50 border border-red-200 p-4">
-						<p class="text-sm text-red-800 font-semibold mb-2">⚠️ Confirmação de Exclusão</p>
+						<p class="text-sm text-red-800 font-semibold mb-2">Confirmação de Exclusão</p>
 						<p class="text-sm text-red-800">Esta ação é permanente e não pode ser desfeita.</p>
 					</div>
 

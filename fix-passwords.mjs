@@ -7,7 +7,7 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 async function fixPasswords() {
   try {
-    console.log('🔍 Verificando usuários...\n');
+    console.log(' Verificando usuários...\n');
     
     const users = await pool.query(`
       SELECT u.id, u.name, u.email, u.role, a.id as account_id, a.password
@@ -22,10 +22,10 @@ async function fixPasswords() {
       return;
     }
 
-    console.log(`📋 Encontrados ${users.rows.length} usuários:\n`);
+    console.log(` Encontrados ${users.rows.length} usuários:\n`);
     
     for (const user of users.rows) {
-      console.log(`👤 ${user.role.toUpperCase()}: ${user.name} (${user.email})`);
+      console.log(` ${user.role.toUpperCase()}: ${user.name} (${user.email})`);
       console.log(`   Account ID: ${user.account_id || '❌ SEM CONTA'}`);
       console.log(`   Password: ${user.password ? '✅ Existe' : '❌ Vazia'}\n`);
     }

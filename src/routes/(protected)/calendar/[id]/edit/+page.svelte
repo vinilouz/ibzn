@@ -58,12 +58,10 @@
     }
   });
 
-  // Sincroniza displayName com a fonte correta baseado em isSignedUp
   $effect(() => {
     displayName = isSignedUp ? participantSearchTerm : name;
   });
 
-  // Watcher para limpar dados quando desmarca isSignedUp
   $effect(() => {
     if (!isSignedUp) {
       selectedParticipantId = null;

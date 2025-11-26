@@ -26,7 +26,7 @@
                 redirectTo: `${window.location.origin}/reset-password`,
             });
             success = true;
-        } catch (err) {
+        } catch {
             error = 'Erro ao enviar link de redefinição. Verifique o email e tente novamente.';
         } finally {
             loading = false;

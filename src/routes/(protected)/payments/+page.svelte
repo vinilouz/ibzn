@@ -47,7 +47,6 @@
 		return filteredPayments.slice(start, end);
 	});
 
-	// Reset to page 1 when filters change
 	let prevSearchTerm = '';
 	let prevStatusFilter = 'all';
 	$effect(() => {

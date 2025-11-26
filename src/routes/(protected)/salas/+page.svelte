@@ -212,7 +212,6 @@
 		return filteredRooms.slice(start, end);
 	});
 
-	// Reset página quando filtros mudarem
 	$effect(() => {
 		searchTerm;
 		searchBy;

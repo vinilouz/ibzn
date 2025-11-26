@@ -3,10 +3,9 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { db } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import { Resend } from 'resend';
-import { RESEND_API_KEY } from '$env/static/private';
 import 'dotenv/config';
 
-const resend = new Resend(RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY || 'disabled');
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -22,7 +21,7 @@ export const auth = betterAuth({
       }
     }
   },
-  basePath: '/auth',
+  basePath: '/api/auth',
   baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:5173',
   trustedOrigins: [
     'http://localhost:5173',

@@ -43,7 +43,6 @@
 		return filteredCourses.slice(start, end);
 	});
 
-	// Reset to page 1 when search changes
 	let prevSearchTerm = '';
 	$effect(() => {
 		if (searchTerm !== prevSearchTerm) {
