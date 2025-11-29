@@ -101,7 +101,7 @@
 				<Input
 					id="password"
 					type={showPassword ? 'text' : 'password'}
-					placeholder="Mínimo 6 caracteres"
+					placeholder="Mínimo 8 caracteres"
 					bind:value={password}
 					required
 					class="pr-10"
